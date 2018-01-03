@@ -24,7 +24,7 @@ def process_content(tokenized_text):
             # chunked.draw()
 
             # Detecting named entities.
-            # If you want to see the type of the named entity, delete binary
+            # If you want to see the type of the named entity, delete binary var.
             namedEnt = nltk.ne_chunk(tagged, binary=True)
             namedEnt.draw()
 
