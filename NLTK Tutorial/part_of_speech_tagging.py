@@ -2,8 +2,7 @@ import nltk
 from nltk.corpus import state_union
 from nltk.tokenize import PunktSentenceTokenizer
 
-nltk.download('state_union')
-nltk.download('averaged_perceptron_tagger')
+# nltk.download('all')
 
 def process_content(tokenized_text):
     try:
@@ -13,13 +12,21 @@ def process_content(tokenized_text):
             # then for each word, tagging the POS
             tagged = nltk.pos_tag(words)
 
-            
-            chunkGram = r"""Chunk: {<RB.?>*<VB.?>*<NNP><NN>?}"""
+            # Chinking and Chunking
+            #
+            # chunkGram = r"""Chunk: {<.*>+}
+            #                 }<VB.?|IN|DT>+{
+            #             """
+            #
+            # chunkParser = nltk.RegexpParser(chunkGram)
+            # chunked = chunkParser.parse(tagged)
+            #
+            # chunked.draw()
 
-            chunkParser = nltk.RegexpParser(chunkGram)
-            chunked = chunkParser.parse(tagged)
-
-            chunked[].draw()
+            # Detecting named entities.
+            # If you want to see the type of the named entity, delete binary
+            namedEnt = nltk.ne_chunk(tagged, binary=True)
+            namedEnt.draw()
 
     except Exception as e:
         print(str(e))
