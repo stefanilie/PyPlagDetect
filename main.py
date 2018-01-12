@@ -10,9 +10,12 @@ from nltk.tag import UnigramTagger
 
 # load the resources
 def downloadNLTKResources():
-    nltk.download('stopwords')
-    nltk.download('cmudict')
-    nltk.download('treebank')
+    nltk.download('all')
+
+def computeParagraphFeatures(corpusReader):
+     files = corpusReader.fileids()
+     for item in files:
+         words = corpusReader.words(fileids=item)
 
 # setting the PATH
 os.chdir(config.PATH)
@@ -27,7 +30,7 @@ stopWords = set(stopwords.words('english'))
 cmdict = cmudict.dict()
 # print(cmudict.entries()[653:659])
 
-# Training a unigram part of speech tagger 
+# Training a unigram part of speech tagger
 train_sents = treebank.tagged_sents()[:5000]
 tagger = UnigramTagger(train_sents)
-print(tagger.tag(treebank.sents()[0]))
+computeParagraphFeatures(corpusReader=corpusReader)
