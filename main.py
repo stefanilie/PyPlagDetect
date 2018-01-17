@@ -220,21 +220,29 @@ def classify_chinks_paragraph(feature_dict, corpus):
              para_percents["para_chars_count"] > (document_percents["doc_char_count"] + factor3) or \
              para_percents["para_chars_count"] < (document_percents["doc_char_count"] - factor3):
                 paragraph.update({
-                    'plagiarized': True
+                    'plagiarized_paragraph': True
                 })
                 # 6 para_percents["para_words_count"]
                 doc_detected_words += para_percents["para_words_count"]
             else:
                 paragraph.update({
-                    'plagiarized': False
+                    'plagiarized_paragraph': False
                 })
         ratio = doc_detected_words*100/float(item["word_count"])
+        if ratio > 5:
+            item.update({
+                "plagiarized_doc": True,
+                "plagiarised_ratio": ratio
+            })
 
     print "\n\===============Data after feature classification===============\n"
     print feature_dict
     return feature_dict
 
 
+'''
+THis has to be done.... 
+'''
 def compute_TF_IDF(term, document):
     tf = computeTF(term, document)
     idf = computeIDF(term, corpus)
@@ -260,8 +268,11 @@ cmdict = cmudict.dict()
 train_sents = treebank.tagged_sents()[:5000]
 tagger = UnigramTagger(train_sents)
 feature_arr = compute_paragraph_features(corpus=corpusReader)
-classify_chinks_paragraph(feature_dict=feature_arr, corpus=corpusReader)
+feature_arr = classify_chinks_paragraph(feature_dict=feature_arr, corpus=corpusReader)
 
+for item in feature_arr:
+    if "plagiarized_doc" in item:
+        print "\nDocument is plagiarised with a ratio of:"+str(item["plagiarised_ratio"])
 
 # term-frequency of a word (tf) = 1 + log(frequency of word in a document)
 # inverse-document-frequency of a word (idf) = log(Total Number of Documents in the Corpus / Number of Documents in which the word appears)
