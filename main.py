@@ -51,7 +51,7 @@ Main method for computing paragraph feature numbers
 '''
 def compute_paragraph_features(corpus):
     files = corpus.fileids()
-    dict_synthesis={}
+    arr_synthesis = []
 
     '''
     First we iterate over all the files we need to analyse using the
@@ -67,8 +67,7 @@ def compute_paragraph_features(corpus):
         doc_stpwrd_count = 0
         doc_chars_count = 0
         words_in_doc = 0
-        dict_all_paragraphs = {}
-
+        arr_all_paragraphs = []
 
         '''
         Getting the most and least frequent 24% words
@@ -82,6 +81,7 @@ def compute_paragraph_features(corpus):
         most_freq = fdist_file.most_common(percentage)
         least_freq = fdist_file.most_common()[-percentage:]
 
+        # enumerating the paragraphs from the document and evaluating them
         for index, paragraph in enumerate(corpus.paras(fileids=file_item)):
             para_noun_count = 0
             para_pnoun_count = 0
@@ -128,11 +128,11 @@ def compute_paragraph_features(corpus):
             dict_para_features = {
                 'para_adj': para_adj_count,
                 'para_adverb': para_adverb_count,
+                'para_pronoun': para_pronoun_count,
                 'para_noun': para_noun_count,
                 'para_verb': para_verb_count,
-                'para_pnoun': para_pnoun_count,
-                'para_pronoun': para_pronoun_count,
-                'para_stpwrd': para_stpwrd_count
+                'para_stpwrd': para_stpwrd_count,
+                'para_pnoun': para_pnoun_count
             }
             dict_para_percents = get_feature_percentage(relative_to=para_words_count, feature=dict_para_features)
 
@@ -148,48 +148,47 @@ def compute_paragraph_features(corpus):
             syllable_div_words = para_syllable_count/para_words_count
             chars_div_words = para_chars_count / para_words_count
 
-            dict_para_features.update({
+            dict_para_percents.update({
                 'syllable_div_words': syllable_div_words,
                 'chars_div_words': chars_div_words,
                 'para_chars_count': para_chars_count,
                 'para_words_count': para_words_count
             })
 
-            dict_all_paragraphs.update({
+            arr_all_paragraphs.append({
                 'paragraph_number': str(index),
                 'feature_percents': dict_para_percents
             })
             print "\n\===============Paragraph "+str(index)+"===============\n"
-            print dict_all_paragraphs
+            print arr_all_paragraphs
 
 
         dict_doc_features = {
-            'doc_adj': doc_adj_count,
             'doc_adverb': doc_adverb_count,
+            'doc_stpwrd': doc_stpwrd_count,
+            'doc_pnoun': doc_pnoun_count,
             'doc_noun': doc_noun_count,
             'doc_verb': doc_verb_count,
-            'doc_pnoun': doc_pnoun_count,
-            'doc_pronoun': doc_pronoun_count,
-            'doc_stpwrd': doc_stpwrd_count,
-            'doc_chars': doc_chars_count
+            'doc_adj': doc_adj_count,
+            'doc_pronoun': doc_pronoun_count
         }
-
         dict_doc_percents = get_feature_percentage(relative_to=words_in_doc, feature=dict_doc_features)
-        print dict_doc_percents
-        print "\n\n"
 
-        dict_synthesis.update({
+        dict_doc_percents.update({
+            'doc_char_count': doc_chars_count
+        })
+
+        arr_synthesis.append({
             'id': file_item,
             'dict_doc_percents': dict_doc_percents,
             'word_count': words_in_doc,
-            'paragraph_count': len(dict_all_paragraphs),
-            'dict_all_paragraphs': dict_all_paragraphs
+            'paragraph_count': len(arr_all_paragraphs),
+            'arr_all_paragraphs': arr_all_paragraphs
         })
 
-
-    print "\n\===============dict_synthesis===============\n"
-    print dict_synthesis
-    return dict_synthesis
+    print "\n\===============Data after paraghraph analisys===============\n"
+    print arr_synthesis
+    return arr_synthesis
 
 def classify_chinks_paragraph(feature_dict, corpus):
 
@@ -201,27 +200,37 @@ def classify_chinks_paragraph(feature_dict, corpus):
     # iterating documents synthesis
     for item in feature_dict:
         doc_detected_words=0
-        # schimba aici sa primeasca inturi...
-        # TypeError: string indices must be integers, not str
-        document_percents = item[0]
-        # iterating through the paragraphs synthesis
-        for paragraph in item['dict_all_paragraphs']:
-            para_percents = paragraph['feature_percents']
-            if para_percents['para_noun_percentage'] > (document_percents['doc_noun_percentage'] + factor1) or \
-             para_percents['para_noun_percentage'] < (document_percents['doc_noun_percentage'] - factor1) or \
-             para_percents['para_verb_percentage'] > (document_percents['doc_verb_percentage'] + factor2) or \
-             para_percents['para_verb_percentage'] < (document_percents['doc_verb_percentage'] - factor2) or \
-             para_percents['para_chars_count'] > (document_percents['doc_chars_count'] + factor3) or \
-             para_percents['para_chars_count'] < (document_percents['doc_chars_count'] - factor3):
+
+        #getting the item[dict_doc_percents]
+        document_percents = item["dict_doc_percents"]
+
+        print type(item['arr_all_paragraphs'])
+        # iterating through the paragraphs synthesis -> item['arr_all_paragraphs']
+        for paragraph in item["arr_all_paragraphs"]:
+            # paragraph['feature_percents']
+            para_percents = paragraph["feature_percents"]
+            # 3 'para_noun_percentage' & 4 'doc_noun_percentage'
+            # 9 'para_verb_percentage' & 5 'doc_verb_percentage'
+            # 2 'para_chars_count' & 'doc_chars_count'
+
+            if para_percents["para_noun_percentage"] > (document_percents["doc_noun_percentage"] + factor1) or \
+             para_percents["para_noun_percentage"] < (document_percents["doc_noun_percentage"] - factor1) or \
+             para_percents["para_verb_percentage"] > (document_percents["doc_verb_percentage"] + factor2) or \
+             para_percents["para_verb_percentage"] < (document_percents["doc_verb_percentage"] - factor2) or \
+             para_percents["para_chars_count"] > (document_percents["doc_char_count"] + factor3) or \
+             para_percents["para_chars_count"] < (document_percents["doc_char_count"] - factor3):
                 paragraph.update({
                     'plagiarized': True
                 })
+                # 6 para_percents["para_words_count"]
                 doc_detected_words += para_percents["para_words_count"]
             else:
                 paragraph.update({
                     'plagiarized': False
                 })
         ratio = doc_detected_words*100/float(item["word_count"])
+
+    print "\n\===============Data after feature classification===============\n"
     print feature_dict
     return feature_dict
 
@@ -250,8 +259,8 @@ cmdict = cmudict.dict()
 # Training a unigram part of speech tagger
 train_sents = treebank.tagged_sents()[:5000]
 tagger = UnigramTagger(train_sents)
-feature_dict = compute_paragraph_features(corpus=corpusReader)
-classify_chinks_paragraph(feature_dict=feature_dict, corpus=corpusReader)
+feature_arr = compute_paragraph_features(corpus=corpusReader)
+classify_chinks_paragraph(feature_dict=feature_arr, corpus=corpusReader)
 
 
 # term-frequency of a word (tf) = 1 + log(frequency of word in a document)
