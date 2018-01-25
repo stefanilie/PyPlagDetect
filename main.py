@@ -11,7 +11,11 @@ from nltk.corpus import cmudict, treebank
 from nltk.tag import UnigramTagger
 from nltk.probability import FreqDist
 
+from textstat.textstat import textstat
+
 from compiler.ast import flatten
+
+from collections import Counter
 
 # load the resources
 
@@ -49,6 +53,7 @@ def get_intersection(list1, list2):
 Method obtained from https://github.com/ypeels/nltk-book/blob/master/exercises/2.21-syllable-count.py
 Calculates syllable count for the provided word.
 @param word - string representing the word.
+\=======================DEPRECATED========================/
 '''
 def syllables_in_word(word):
     flat_dict = dict(cmudict.entries())
@@ -77,6 +82,7 @@ def get_feature_percentage(relative_to, feature):
 Main method for computing paragraph feature numbers
 '''
 def compute_paragraph_features(corpus):
+    print "\nStarting to analyse the corpus"
     files = corpus.fileids()
     arr_synthesis = []
 
@@ -85,16 +91,20 @@ def compute_paragraph_features(corpus):
     PlaintextCorpusReader class.
     '''
     for file_item in files:
-        doc_noun_count = 0
-        doc_pnoun_count = 0
-        doc_pronoun_count = 0
-        doc_verb_count = 0
-        doc_adverb_count = 0
-        doc_adj_count= 0
+        print "\nOpening file: ", file_item
+        # doc_noun_count = 0
+        # doc_pnoun_count = 0
+        # doc_pronoun_count = 0
+        # doc_verb_count = 0
+        # doc_adverb_count = 0
+        # doc_adj_count= 0
         doc_stpwrd_count = 0
         doc_chars_count = 0
         words_in_doc = 0
         arr_all_paragraphs = []
+
+
+        counter_doc_tags = Counter()
 
         '''
         Getting the most and least frequent 24% words
@@ -108,14 +118,19 @@ def compute_paragraph_features(corpus):
         most_freq = fdist_file.most_common(percentage)
         least_freq = fdist_file.most_common()[-percentage:]
 
+        print "\nGathered most_freq:", most_freq
+        print "\nGathered least_freq:", least_freq
+
+
         # enumerating the paragraphs from the document and evaluating them
         for index, paragraph in enumerate(corpus.paras(fileids=file_item)):
-            para_noun_count = 0
-            para_pnoun_count = 0
-            para_pronoun_count = 0
-            para_verb_count = 0
-            para_adverb_count = 0
-            para_adj_count= 0
+            print "\nStarting analysing paragraph no.", index
+            # para_noun_count = 0
+            # para_pnoun_count = 0
+            # para_pronoun_count = 0
+            # para_verb_count = 0
+            # para_adverb_count = 0
+            # para_adj_count= 0
             para_stpwrd_count = 0;
             para_syllable_count = 0;
             para_words_count = 0
@@ -130,45 +145,65 @@ def compute_paragraph_features(corpus):
             least_common = get_intersection(least_freq, least_freq_para)
             most_common = get_intersection(most_freq, most_freq_para)
 
+            para_syllable_count = textstat.syllable_count(str(flatten(paragraph)))
+            para_chars_count = textstat.char_count(str(flatten(paragraph)))
+
             for sentence in paragraph:
                 para_words_count += len(sentence)
 
-                for word in sentence:
-                    para_chars_count += len(word)
-                    para_syllable_count += syllables_in_word(word=word)
-                    if word in stopWords:
-                        para_stpwrd_count += 1
-                for tok, tag in tagger.tag(sentence):
-                    if str(tag) == "NN" or str(tag) == "NNS":
-                        para_noun_count += 1
-                    elif str(tag) == "NNP" or str(tag) == "NNPS":
-                        para_pnoun_count += 1
-                    elif str(tag) == "PRP" or str(tag) == "PRP$":
-                        para_pronoun_count += 1
-                    elif re.match(r"^VB[A-Z]$", str(tag)) or str(tag) == "VB":
-                        para_verb_count += 1
-                    elif str(tag) == "RB" or re.match(r"^RB[A-Z]", str(tag)):
-                        para_adverb_count += 1
-                    elif str(tag) == "JJ" or re.match(r"^JJ[A-Z]", str(tag)):
-                        para_adj_count += 1
+                '''
+                ToDo: This here is the root to all my performance problems.
+                '''
+                # for word in sentence:
+                #     para_chars_count += len(word)
+                #     para_syllable_count += syllables_in_word(word=word)
+                #     if word in stopWords:
+                #         para_stpwrd_count += 1
 
-            dict_para_features = {
-                'para_adj': para_adj_count,
-                'para_adverb': para_adverb_count,
-                'para_pronoun': para_pronoun_count,
-                'para_noun': para_noun_count,
-                'para_verb': para_verb_count,
-                'para_stpwrd': para_stpwrd_count,
-                'para_pnoun': para_pnoun_count
-            }
-            dict_para_percents = get_feature_percentage(relative_to=para_words_count, feature=dict_para_features)
+                # para_chars_count = sum([len(i) for i in sentence])
+                counter_para_tags = Counter([i[1] for i in tagger.tag(sentence)])
+                para_stpwrd_count += len(get_intersection(sentence, stopWords))
 
-            doc_adj_count += para_adj_count
-            doc_noun_count += para_noun_count
-            doc_verb_count += para_verb_count
-            doc_pnoun_count += para_pnoun_count
-            doc_pronoun_count += para_pronoun_count
-            doc_adverb_count += para_adverb_count
+                '''
+                Simply add the values from the paragraph pos counter
+                to the doc one.
+                '''
+                counter_doc_tags += counter_para_tags
+
+                # for tok, tag in tagger.tag(sentence):
+                #     if str(tag) == "NN" or str(tag) == "NNS":
+                #         para_noun_count += 1
+                #     elif str(tag) == "NNP" or str(tag) == "NNPS":
+                #         para_pnoun_count += 1
+                #     elif str(tag) == "PRP" or str(tag) == "PRP$":
+                #         para_pronoun_count += 1
+                #     elif re.match(r"^VB[A-Z]$", str(tag)) or str(tag) == "VB":
+                #         para_verb_count += 1
+                #     elif str(tag) == "RB" or re.match(r"^RB[A-Z]", str(tag)):
+                #         para_adverb_count += 1
+                #     elif str(tag) == "JJ" or re.match(r"^JJ[A-Z]", str(tag)):
+                #         para_adj_count += 1
+
+            # dict_para_features = {
+            #     'para_adj': para_adj_count,
+            #     'para_adverb': para_adverb_count,
+            #     'para_pronoun': para_pronoun_count,
+            #     'para_noun': para_noun_count,
+            #     'para_verb': para_verb_count,
+            #     'para_stpwrd': para_stpwrd_count,
+            #     'para_pnoun': para_pnoun_count
+            # }
+            # dict_para_percents = get_feature_percentage(relative_to=para_words_count, feature=dict_para_features)
+            dict_para_percents = get_feature_percentage(relative_to=para_words_count,
+                feature=dict(counter_para_tags))
+            print dict_para_percents
+
+            # doc_adj_count += para_adj_count
+            # doc_noun_count += para_noun_count
+            # doc_verb_count += para_verb_count
+            # doc_pnoun_count += para_pnoun_count
+            # doc_pronoun_count += para_pronoun_count
+            # doc_adverb_count += para_adverb_count
             doc_stpwrd_count += para_stpwrd_count
             doc_chars_count += para_chars_count
 
@@ -190,16 +225,17 @@ def compute_paragraph_features(corpus):
             print arr_all_paragraphs
 
 
-        dict_doc_features = {
-            'doc_adverb': doc_adverb_count,
-            'doc_stpwrd': doc_stpwrd_count,
-            'doc_pnoun': doc_pnoun_count,
-            'doc_noun': doc_noun_count,
-            'doc_verb': doc_verb_count,
-            'doc_adj': doc_adj_count,
-            'doc_pronoun': doc_pronoun_count
-        }
-        dict_doc_percents = get_feature_percentage(relative_to=words_in_doc, feature=dict_doc_features)
+        # dict_doc_features = {
+        #     'doc_adverb': doc_adverb_count,
+        #     'doc_stpwrd': doc_stpwrd_count,
+        #     'doc_pnoun': doc_pnoun_count,
+        #     'doc_noun': doc_noun_count,
+        #     'doc_verb': doc_verb_count,
+        #     'doc_adj': doc_adj_count,
+        #     'doc_pronoun': doc_pronoun_count
+        # }
+        dict_doc_percents = get_feature_percentage(relative_to=words_in_doc,
+        feature=dict(counter_doc_tags))
 
         dict_doc_percents.update({
             'doc_char_count': doc_chars_count
@@ -268,7 +304,7 @@ def classify_chinks_paragraph(feature_dict, corpus):
 
 
 '''
-THis has to be done....
+This has to be done....
 '''
 def compute_TF_IDF(term, document):
     tf = computeTF(term, document)
