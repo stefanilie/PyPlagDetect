@@ -16,13 +16,29 @@ from compiler.ast import flatten
 # load the resources
 
 
+'''
+Downloads all of the nltk resources.
+'''
 def downloadNLTKResources():
     nltk.download('all')
 
 
+'''
+Returns the exact number of words based on the percentage needed.
+@param words - [array of strings] words in analysed structure.
+@param percentage - [double] fraction of resource that needs to be extracted.
+@return [int] exact number of words that have to be taken into account.
+'''
 def get_percentage(words, percentage):
     return int(percentage * len(words))
 
+
+'''
+Intersection of two provided lists.
+@param list1 - [list]
+@param list2 - [list]
+@return [list] intersection of the two lists.
+'''
 def get_intersection(list1, list2):
     list1 = flatten(list1)
     list2 = flatten(list2)
@@ -31,6 +47,8 @@ def get_intersection(list1, list2):
 
 '''
 Method obtained from https://github.com/ypeels/nltk-book/blob/master/exercises/2.21-syllable-count.py
+Calculates syllable count for the provided word.
+@param word - string representing the word.
 '''
 def syllables_in_word(word):
     flat_dict = dict(cmudict.entries())
@@ -39,6 +57,15 @@ def syllables_in_word(word):
     else:
         return 0
 
+
+'''
+First it calculates the percentage of a feature relative to the bigger one.
+After this it edits the name of the feature so that it contains
+the "_percentage" component.
+@param relative_to - [int] the feature to which we calculate the percentage of
+the other smaller ones. Example: paragraph_words_count.
+@param feature - [dict] feature dictionary containing the values to be calculated.
+'''
 def get_feature_percentage(relative_to, feature):
     dict_reply = {}
     for key, value in feature.iteritems():
@@ -241,7 +268,7 @@ def classify_chinks_paragraph(feature_dict, corpus):
 
 
 '''
-THis has to be done.... 
+THis has to be done....
 '''
 def compute_TF_IDF(term, document):
     tf = computeTF(term, document)
