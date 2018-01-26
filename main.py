@@ -3,6 +3,7 @@ import re
 import nltk
 import config
 import string
+import pprint
 
 from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import stopwords
@@ -91,13 +92,6 @@ def compute_paragraph_features(corpus):
     PlaintextCorpusReader class.
     '''
     for file_item in files:
-        print "\nOpening file: ", file_item
-        # doc_noun_count = 0
-        # doc_pnoun_count = 0
-        # doc_pronoun_count = 0
-        # doc_verb_count = 0
-        # doc_adverb_count = 0
-        # doc_adj_count= 0
         doc_stpwrd_count = 0
         doc_chars_count = 0
         words_in_doc = 0
@@ -111,26 +105,14 @@ def compute_paragraph_features(corpus):
         '''
         file_words = corpus.words(fileids=file_item)
         words_in_doc = len(file_words)
-        # sents = corpus.sents(fileids=file_item)
         fdist_file = FreqDist(file_words)
         percentage = get_percentage(words=file_words, percentage=0.24)
 
         most_freq = fdist_file.most_common(percentage)
         least_freq = fdist_file.most_common()[-percentage:]
 
-        print "\nGathered most_freq:", most_freq
-        print "\nGathered least_freq:", least_freq
-
-
         # enumerating the paragraphs from the document and evaluating them
         for index, paragraph in enumerate(corpus.paras(fileids=file_item)):
-            print "\nStarting analysing paragraph no.", index
-            # para_noun_count = 0
-            # para_pnoun_count = 0
-            # para_pronoun_count = 0
-            # para_verb_count = 0
-            # para_adverb_count = 0
-            # para_adj_count= 0
             para_stpwrd_count = 0;
             para_syllable_count = 0;
             para_words_count = 0
@@ -151,16 +133,6 @@ def compute_paragraph_features(corpus):
             for sentence in paragraph:
                 para_words_count += len(sentence)
 
-                '''
-                ToDo: This here is the root to all my performance problems.
-                '''
-                # for word in sentence:
-                #     para_chars_count += len(word)
-                #     para_syllable_count += syllables_in_word(word=word)
-                #     if word in stopWords:
-                #         para_stpwrd_count += 1
-
-                # para_chars_count = sum([len(i) for i in sentence])
                 counter_para_tags = Counter([i[1] for i in tagger.tag(sentence)])
                 para_stpwrd_count += len(get_intersection(sentence, stopWords))
 
@@ -170,40 +142,10 @@ def compute_paragraph_features(corpus):
                 '''
                 counter_doc_tags += counter_para_tags
 
-                # for tok, tag in tagger.tag(sentence):
-                #     if str(tag) == "NN" or str(tag) == "NNS":
-                #         para_noun_count += 1
-                #     elif str(tag) == "NNP" or str(tag) == "NNPS":
-                #         para_pnoun_count += 1
-                #     elif str(tag) == "PRP" or str(tag) == "PRP$":
-                #         para_pronoun_count += 1
-                #     elif re.match(r"^VB[A-Z]$", str(tag)) or str(tag) == "VB":
-                #         para_verb_count += 1
-                #     elif str(tag) == "RB" or re.match(r"^RB[A-Z]", str(tag)):
-                #         para_adverb_count += 1
-                #     elif str(tag) == "JJ" or re.match(r"^JJ[A-Z]", str(tag)):
-                #         para_adj_count += 1
 
-            # dict_para_features = {
-            #     'para_adj': para_adj_count,
-            #     'para_adverb': para_adverb_count,
-            #     'para_pronoun': para_pronoun_count,
-            #     'para_noun': para_noun_count,
-            #     'para_verb': para_verb_count,
-            #     'para_stpwrd': para_stpwrd_count,
-            #     'para_pnoun': para_pnoun_count
-            # }
-            # dict_para_percents = get_feature_percentage(relative_to=para_words_count, feature=dict_para_features)
             dict_para_percents = get_feature_percentage(relative_to=para_words_count,
                 feature=dict(counter_para_tags))
-            print dict_para_percents
 
-            # doc_adj_count += para_adj_count
-            # doc_noun_count += para_noun_count
-            # doc_verb_count += para_verb_count
-            # doc_pnoun_count += para_pnoun_count
-            # doc_pronoun_count += para_pronoun_count
-            # doc_adverb_count += para_adverb_count
             doc_stpwrd_count += para_stpwrd_count
             doc_chars_count += para_chars_count
 
@@ -224,16 +166,6 @@ def compute_paragraph_features(corpus):
             print "\n\===============Paragraph "+str(index)+"===============\n"
             print arr_all_paragraphs
 
-
-        # dict_doc_features = {
-        #     'doc_adverb': doc_adverb_count,
-        #     'doc_stpwrd': doc_stpwrd_count,
-        #     'doc_pnoun': doc_pnoun_count,
-        #     'doc_noun': doc_noun_count,
-        #     'doc_verb': doc_verb_count,
-        #     'doc_adj': doc_adj_count,
-        #     'doc_pronoun': doc_pronoun_count
-        # }
         dict_doc_percents = get_feature_percentage(relative_to=words_in_doc,
         feature=dict(counter_doc_tags))
 
@@ -250,7 +182,7 @@ def compute_paragraph_features(corpus):
         })
 
     print "\n\===============Data after paraghraph analisys===============\n"
-    print arr_synthesis
+    pretty_printer.pprint(arr_synthesis)
     return arr_synthesis
 
 def classify_chinks_paragraph(feature_dict, corpus):
@@ -267,19 +199,21 @@ def classify_chinks_paragraph(feature_dict, corpus):
         #getting the item[dict_doc_percents]
         document_percents = item["dict_doc_percents"]
 
-        print type(item['arr_all_paragraphs'])
         # iterating through the paragraphs synthesis -> item['arr_all_paragraphs']
         for paragraph in item["arr_all_paragraphs"]:
             # paragraph['feature_percents']
             para_percents = paragraph["feature_percents"]
-            # 3 'para_noun_percentage' & 4 'doc_noun_percentage'
-            # 9 'para_verb_percentage' & 5 'doc_verb_percentage'
-            # 2 'para_chars_count' & 'doc_chars_count'
+            if not para_percents.has_key("VB_percentage"):
+                para_percents.update({
+                    "VB_percentage": 0
+                })
 
-            if para_percents["para_noun_percentage"] > (document_percents["doc_noun_percentage"] + factor1) or \
-             para_percents["para_noun_percentage"] < (document_percents["doc_noun_percentage"] - factor1) or \
-             para_percents["para_verb_percentage"] > (document_percents["doc_verb_percentage"] + factor2) or \
-             para_percents["para_verb_percentage"] < (document_percents["doc_verb_percentage"] - factor2) or \
+            
+
+            if para_percents["NN_percentage"] > (document_percents["NN_percentage"] + factor1) or \
+             para_percents["NN_percentage"] < (document_percents["NN_percentage"] - factor1) or \
+             para_percents["VB_percentage"] > (document_percents["VB_percentage"] + factor2) or \
+             para_percents["VB_percentage"] < (document_percents["VB_percentage"] - factor2) or \
              para_percents["para_chars_count"] > (document_percents["doc_char_count"] + factor3) or \
              para_percents["para_chars_count"] < (document_percents["doc_char_count"] - factor3):
                 paragraph.update({
@@ -299,7 +233,7 @@ def classify_chinks_paragraph(feature_dict, corpus):
             })
 
     print "\n\===============Data after feature classification===============\n"
-    print feature_dict
+    pretty_printer.pprint(feature_dict)
     return feature_dict
 
 
@@ -325,7 +259,8 @@ corpusReader = PlaintextCorpusReader(config.PATH, '.*\.txt')
 stopWords = set(stopwords.words('english'))
 
 cmdict = cmudict.dict()
-# print(cmudict.entries()[653:659])
+
+pretty_printer = pprint.PrettyPrinter(indent=4)
 
 # Training a unigram part of speech tagger
 train_sents = treebank.tagged_sents()[:5000]
