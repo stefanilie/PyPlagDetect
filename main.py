@@ -1,5 +1,6 @@
 import os
 import re
+import math
 import nltk
 import config
 import string
@@ -127,6 +128,11 @@ def compute_paragraph_features(corpus):
             least_common = get_intersection(least_freq, least_freq_para)
             most_common = get_intersection(most_freq, most_freq_para)
 
+            # calculating percentage of rare words from the paragraph
+            # that appear also in the document.
+            # least_freq_percentage = 100*least_freq_para/float(least_freq)
+            # most_common_percentage = 100*most_freq_para/float(most_freq)
+
             para_syllable_count = textstat.syllable_count(str(flatten(paragraph)))
             para_chars_count = textstat.char_count(str(flatten(paragraph)))
 
@@ -156,7 +162,9 @@ def compute_paragraph_features(corpus):
                 'syllable_div_words': syllable_div_words,
                 'chars_div_words': chars_div_words,
                 'para_chars_count': para_chars_count,
-                'para_words_count': para_words_count
+                'para_words_count': para_words_count,
+                'most_freq_para': most_freq_para,
+                'least_freq_para': least_freq_para
             })
 
             arr_all_paragraphs.append({
@@ -178,7 +186,10 @@ def compute_paragraph_features(corpus):
             'dict_doc_percents': dict_doc_percents,
             'word_count': words_in_doc,
             'paragraph_count': len(arr_all_paragraphs),
-            'arr_all_paragraphs': arr_all_paragraphs
+            'arr_all_paragraphs': arr_all_paragraphs,
+            'most_freq': most_freq,
+            'least_freq': least_freq
+
         })
 
     print "\n\===============Data after paraghraph analisys===============\n"
@@ -208,18 +219,19 @@ def classify_chinks_paragraph(feature_dict, corpus):
                     "VB_percentage": 0
                 })
 
-            
-
             if para_percents["NN_percentage"] > (document_percents["NN_percentage"] + factor1) or \
              para_percents["NN_percentage"] < (document_percents["NN_percentage"] - factor1) or \
              para_percents["VB_percentage"] > (document_percents["VB_percentage"] + factor2) or \
              para_percents["VB_percentage"] < (document_percents["VB_percentage"] - factor2) or \
              para_percents["para_chars_count"] > (document_percents["doc_char_count"] + factor3) or \
-             para_percents["para_chars_count"] < (document_percents["doc_char_count"] - factor3):
+             para_percents["para_chars_count"] < (document_percents["doc_char_count"] - factor3) or \
+             para_percents["most_freq_para"] > (document_percents["most_freq"]+factor4) or \
+             para_percents["most_freq_para"] < (document_percents["most_freq"]-factor4) or \
+             para_percents["least_freq_para"] < (document_percents["least_freq"] + factor4) or \
+             para_percents["least_freq_para"] < (document_percents["least_freq"] - factor4):
                 paragraph.update({
                     'plagiarized_paragraph': True
                 })
-                # 6 para_percents["para_words_count"]
                 doc_detected_words += para_percents["para_words_count"]
             else:
                 paragraph.update({
@@ -238,14 +250,43 @@ def classify_chinks_paragraph(feature_dict, corpus):
 
 
 '''
-This has to be done....
+Computes the Term Frequency (TF).
+@param term - [string] the term who's TF we're computing.
+@param tokenized_document - [list string] can be either the sentence,
+the paragraph, or even the entire document. Based on this we calculate the
+TF for the according instance.
+@return [int] value of the TF.
+'''
+def compute_TF(term, tokenized_document):
+    return 1 + math.log(tokenized_document.count(term))
+
+'''
+Computes the Inverse Term Frequency (IDF) coeficient.
+IDF = log(Nr of Docs in the Corpus / Nr of Docs in which the word appears).
+@param term - [string] term to calculate the idf for.
+@param tokenized_document - [list of list string] it can be document.
+@return [int] value of the IDF.
+'''
+def compute_IDF(term, tokenized_document):
+    doc_number=0
+    # Iterating the paragraphs.
+    for doc in tokenized_document:
+        if term in doc:
+            doc_number += 1
+    return math.log(len(tokenized_document/doc_number))
+
+
+'''
+Computes the TF-IDF value.
+@param term - [string] the term to calculate the tf-idf value.
+@param document - [list of string] document or array of docs that needs to be
+calculated.
+@return [int] - value of the computed Tf-Idf
 '''
 def compute_TF_IDF(term, document):
     tf = computeTF(term, document)
-    idf = computeIDF(term, corpus)
+    idf = computeIDF(term, document)
     return tf * idf
-
-# def computeTF(term, document):
 
 
 # setting the PATH
