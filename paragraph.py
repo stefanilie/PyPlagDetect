@@ -18,7 +18,6 @@ class ParagraphAnalyser:
     Main method for computing paragraph feature numbers
     '''
     def compute_paragraph_features(self, corpus):
-        print "\nStarting to analyse the corpus"
         files = corpus.fileids()
         arr_synthesis = []
 
@@ -105,8 +104,8 @@ class ParagraphAnalyser:
                     'paragraph_number': str(index),
                     'feature_percents': dict_para_percents
                 })
-                print "\n\===============Paragraph "+str(index)+"===============\n"
-                print arr_all_paragraphs
+                # print "\n\===============Paragraph "+str(index)+"===============\n"
+                # print arr_all_paragraphs
 
             dict_doc_percents = Helper.get_feature_percentage(relative_to=words_in_doc,
             feature=dict(counter_doc_tags))
@@ -146,7 +145,7 @@ class ParagraphAnalyser:
         factor4 = 10.68
 
         # iterating documents synthesis
-        for item in feature_dict:
+        for index, item in enumerate(feature_dict):
             doc_detected_words=0
 
             #getting the item[dict_doc_percents]
@@ -160,6 +159,10 @@ class ParagraphAnalyser:
                     para_percents.update({
                         "VB_percentage": 0
                     })
+                if not para_percents.has_key("NN_percentage"):
+                    para_percents.update({
+                        "NN_percentage": 0
+                    })
 
                 if para_percents["NN_percentage"] > (document_percents["NN_percentage"] + factor1) or \
                  para_percents["NN_percentage"] < (document_percents["NN_percentage"] - factor1) or \
@@ -167,19 +170,18 @@ class ParagraphAnalyser:
                  para_percents["VB_percentage"] < (document_percents["VB_percentage"] - factor2) or \
                  para_percents["para_chars_count"] > (document_percents["doc_char_count"] + factor3) or \
                  para_percents["para_chars_count"] < (document_percents["doc_char_count"] - factor3) or \
-                 para_percents["most_freq_para"] > (document_percents["most_freq"]+factor4) or \
-                 para_percents["most_freq_para"] < (document_percents["most_freq"]-factor4) or \
-                 para_percents["least_freq_para"] < (document_percents["least_freq"] + factor4) or \
-                 para_percents["least_freq_para"] < (document_percents["least_freq"] - factor4):
+                 len(para_percents["least_freq_para"]) > (len(document_percents["least_freq"]) + factor4) or \
+                 len(para_percents["least_freq_para"]) < (len(document_percents["least_freq"]) - factor4):
                     paragraph.update({
                         'plagiarized_paragraph': True
                     })
-                    doc_detected_words += para_percents["para_words_count"]
+                    doc_detected_words += len(para_percents["least_freq_para"])
                 else:
                     paragraph.update({
                         'plagiarized_paragraph': False
                     })
             ratio = doc_detected_words*100/float(item["word_count"])
+            # print "\nParagraphDocument "+str(index)+":\nRatio: " + str(ratio)
             if ratio > 5:
                 item.update({
                     "plagiarized_doc": True,
