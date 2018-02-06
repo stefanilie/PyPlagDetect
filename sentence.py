@@ -16,7 +16,6 @@ class SentenceAnalyser:
     Main method for computing sentence feature numbers
     '''
     def compute_sentence_features(self, corpus):
-        print "\nStarting to analyse the corpus"
         files = corpus.fileids()
         arr_synthesis = []
 
@@ -105,8 +104,8 @@ class SentenceAnalyser:
                     'sentence_number': str(index),
                     'feature_percents': dict_sent_percents
                 })
-                print "\n\===============Paragraph "+str(index)+"===============\n"
-                print arr_all_sentences
+                # print "\n\===============Sentence "+str(index)+"===============\n"
+                # print arr_all_sentences
 
             dict_doc_percents = Helper.get_feature_percentage(relative_to=words_in_doc,
             feature=dict(counter_doc_tags))
@@ -123,7 +122,6 @@ class SentenceAnalyser:
                 'arr_all_sentences': arr_all_sentences,
                 'most_freq': most_freq,
                 'least_freq': least_freq
-
             })
 
         return arr_synthesis
@@ -141,7 +139,7 @@ class SentenceAnalyser:
         factor1 = 12.48
 
         # iterating documents synthesis
-        for item in feature_dict:
+        for index, item in enumerate(feature_dict):
             doc_detected_words=0
 
             #getting the item[dict_doc_percents]
@@ -156,17 +154,18 @@ class SentenceAnalyser:
                         "VB_percentage": 0
                     })
 
-                if sent_percents["most_freq_sent"] > (document_percents["most_freq"] + factor1) and \
-                sent_percents["least_freq_sent"] > (document_percents["least_freq"] - factor1):
-                    paragraph.update({
+                if len(sent_percents["least_freq_sent"]) > (len(item["least_freq"]) + factor1) or \
+                len(sent_percents["least_freq_sent"]) < (len(item["least_freq"]) - factor1):
+                    sentence.update({
                         'plagiarized_sentence': True
                     })
-                    doc_detected_words += sent_percents["sent_words_count"]
+                    doc_detected_words += len(sent_percents["least_freq_sent"])
                 else:
-                    paragraph.update({
+                    sentence.update({
                         'plagiarized_sentence': False
                     })
             ratio = doc_detected_words*100/float(item["word_count"])
+            # print "\nSentenceDocument "+str(index)+":\nRatio: " + str(ratio)
             if ratio > 5:
                 item.update({
                     "plagiarized_doc": True,

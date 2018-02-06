@@ -67,9 +67,9 @@ def main():
         if "plagiarized_sentence" in item:
             sent_ratio = item["plagiarised_ratio"]
 
-    if sent_ratio != 0 and para_ratio != 0:
-        print "\nDocument is plagiarised with a ratio of:"+ \
-        str(float(para_ratio)+float(sent_ratio)/100.0)
+    if sent_ratio != 0 or para_ratio != 0:
+        print "\nDocument is plagiarised with an average ratio of:"+ \
+        str(float(para_ratio)+float(sent_ratio)/2.0)
 
 
 
