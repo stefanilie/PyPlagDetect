@@ -57,19 +57,46 @@ def main():
     sent_feat_arr = sentence_analiyser.compute_sentence_features(corpusReader)
     sent_feat_arr = sentence_analiyser.classify_chunks_sentence(sent_feat_arr, corpusReader)
 
-    para_ratio = 0
-    sent_ratio = 0
+    sent_ratios = []
+    para_ratios = []
 
-    for item in feature_arr:
+    for index, item in enumerate(feature_arr):
         if "plagiarized_doc" in item:
-            para_ratio = item["plagiarised_ratio"]
-    for item in sent_feat_arr:
-        if "plagiarized_sentence" in item:
-            sent_ratio = item["plagiarised_ratio"]
+            sent_ratios.append({
+                "document_no": index,
+                "ratio": item["plagiarised_ratio"]
+            })
+        else:
+            sent_ratios.append({
+                "document_no": index,
+                "ratio": 0
 
-    if sent_ratio != 0 or para_ratio != 0:
-        print "\nDocument is plagiarised with an average ratio of:"+ \
-        str(float(para_ratio)+float(sent_ratio)/2.0)
+            })
+    for index, item in enumerate(sent_feat_arr):
+        if "plagiarized_doc" in item:
+            para_ratios.append({
+                "document_no": index,
+                "ratio": item["plagiarised_ratio"]
+            })
+        else:
+            para_ratios.append({
+                "document_no": index,
+                "ratio": 0
+            })
+    for index, item in enumerate(para_ratios):
+        ratio = str(float(item["ratio"])+float(sent_ratios[index]["ratio"])/2.0)
+        if ratio > 0:
+            if item["ratio"]>0:
+                if sent_ratios[index]["ratio"]>0:
+                    print "Document "+str(index) + " is plagiarised with an average ratio of: " + ratio
+                else:
+                    print "Document "+str(index) + " is plagiarised with an average ratio of (sentence_ratio: 0): " + ratio
+            else:
+                if sent_ratios[index]["ratio"]>0:
+                    print "Document "+str(index) + " is plagiarised with an average ratio of (para_ratio: 0): " + ratio
+        else:
+            print "Document is not plagiarised."
+
 
 
 

@@ -136,7 +136,7 @@ class SentenceAnalyser:
     '''
     def classify_chunks_sentence(self, feature_dict, corpus):
 
-        factor1 = 12.48
+        factor1 = 8.48
 
         # iterating documents synthesis
         for index, item in enumerate(feature_dict):
@@ -164,8 +164,8 @@ class SentenceAnalyser:
                     sentence.update({
                         'plagiarized_sentence': False
                     })
-            ratio = doc_detected_words*100/float(item["word_count"])
-            # print "\nSentenceDocument "+str(index)+":\nRatio: " + str(ratio)
+                ratio = doc_detected_words/float(item["word_count"])
+                print "\nSentenceDocument "+str(index)+":\nRatio: " + str(ratio)
             if ratio > 5:
                 item.update({
                     "plagiarized_doc": True,

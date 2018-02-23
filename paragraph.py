@@ -180,8 +180,8 @@ class ParagraphAnalyser:
                     paragraph.update({
                         'plagiarized_paragraph': False
                     })
-            ratio = doc_detected_words*100/float(item["word_count"])
-            # print "\nParagraphDocument "+str(index)+":\nRatio: " + str(ratio)
+                ratio = doc_detected_words*100/float(item["word_count"])
+            print "\nParagraphDocument "+str(index)+":\nRatio: " + str(ratio)
             if ratio > 5:
                 item.update({
                     "plagiarized_doc": True,
