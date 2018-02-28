@@ -15,16 +15,22 @@ class VectorAnaliser:
         self.stopWords = stopWords
 
 
-    def vectorise(self, corpus):
+    '''
+    Main method for vectorising the corpus.
+    @param corpus:
+    '''
+    def vectorise(self, corpus, coeficient):
         files= corpus.fileids()
 
         for file_item in files:
             sentences = corpus.sents(fileids=file_item)
             for index, sentence in enumerate(sentences):
+
                 if index+k/2 <= len(sentences):
                     arr_sentences = sentences[index-k/2:index+k/2]
                     compute_word_frequency(arr_sentences)
                     compute_punctuation(arr_sentences)
                     compute_POS(arr_sentences)
                     compute_pronouns(arr_sentences)
+                    compute_closed_class_words(arr_sentences)
                     if index <= k/2:
