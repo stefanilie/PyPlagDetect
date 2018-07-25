@@ -26,7 +26,7 @@ def downloadNLTKResources():
 
 def main():
 
-    # downloadNLTKResources()
+    downloadNLTKResources()
 
     # setting the PATH
     os.chdir(config.PATH)

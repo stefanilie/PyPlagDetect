@@ -1,0 +1,5 @@
+nltk==3.3
+Pyphen==0.9.4
+repoze.lru==0.7
+six==1.11.0
+textstat==0.4.1

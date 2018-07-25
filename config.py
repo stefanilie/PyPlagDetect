@@ -1,1 +1,2 @@
-PATH="/Users/cervelad/Documents/Faculta/TextMining/docs"
+import os
+PATH=os.getcwd()+"/suspicious"
