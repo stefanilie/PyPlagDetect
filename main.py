@@ -14,6 +14,7 @@ from nltk.tag import UnigramTagger
 
 from paragraph import ParagraphAnalyser
 from sentence import SentenceAnalyser
+from vectorise import VectorAnaliser
 # load the resources
 
 
@@ -26,7 +27,7 @@ def downloadNLTKResources():
 
 def main():
 
-    downloadNLTKResources()
+    # downloadNLTKResources()
 
     # setting the PATH
     os.chdir(config.PATH)
@@ -38,20 +39,24 @@ def main():
     # setting stopwords
     stopWords = set(stopwords.words('english'))
 
-    cmdict = cmudict.dict()
+    # cmdict = cmudict.dict()
 
-    pretty_printer = pprint.PrettyPrinter(indent=4)
+    # pretty_printer = pprint.PrettyPrinter(indent=4)
 
     # Training a unigram part of speech tagger
     train_sents = treebank.tagged_sents()[:5000]
     tagger = UnigramTagger(train_sents)
 
+    vectorise = VectorAnaliser(corpusReader, tagger, stopWords)
+    vectorise.vectorise(corpus=corpusReader, coeficient=4)
+
+
     para_analyser = ParagraphAnalyser(corpusReader, tagger, stopWords)
     feature_arr = para_analyser.compute_paragraph_features(corpus=corpusReader)
     feature_arr = para_analyser.classify_chunks_paragraph(feature_dict=feature_arr,
                                                     corpus=corpusReader)
-    # print "\n\===============Data after feature classification===============\n"
-    # pretty_printer.pprint(feature_arr)
+    print "\n\===============Data after feature classification===============\n"
+    pretty_printer.pprint(feature_arr)
 
     sentence_analiyser = SentenceAnalyser(corpusReader, tagger, stopWords)
     sent_feat_arr = sentence_analiyser.compute_sentence_features(corpusReader)
