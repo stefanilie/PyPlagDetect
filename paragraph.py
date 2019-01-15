@@ -4,6 +4,8 @@ from compiler.ast import flatten
 from nltk.probability import FreqDist
 from textstat.textstat import textstat
 
+import pprint
+
 
 class ParagraphAnalyser:
     '''
@@ -35,7 +37,7 @@ class ParagraphAnalyser:
             counter_doc_tags = Counter()
 
             '''
-            Getting the most and least frequent 24% words
+            Getting the most and least frequent 24% words in the doc.
             '''
             file_words = corpus.words(fileids=file_item)
             words_in_doc = len(file_words)
@@ -45,7 +47,9 @@ class ParagraphAnalyser:
             most_freq = fdist_file.most_common(percentage)
             least_freq = fdist_file.most_common()[-percentage:]
 
-            # enumerating the paragraphs from the document and evaluating them
+            '''
+            Enumerating the paragraphs from the document and evaluating them
+            '''
             for index, paragraph in enumerate(corpus.paras(fileids=file_item)):
                 para_stpwrd_count = 0;
                 para_syllable_count = 0;
@@ -58,14 +62,16 @@ class ParagraphAnalyser:
                 most_freq_para = fdist_paragraph.most_common(percentage)
                 least_freq_para = fdist_paragraph.most_common()[-percentage]
 
+                '''
+                Calculating percentage of rare words from the paragraph
+                that appear also in the document.
+                '''
                 least_common = Helper.get_intersection(least_freq, least_freq_para)
                 most_common = Helper.get_intersection(most_freq, most_freq_para)
 
-                # calculating percentage of rare words from the paragraph
-                # that appear also in the document.
-                # least_freq_percentage = 100*least_freq_para/float(least_freq)
-                # most_common_percentage = 100*most_freq_para/float(most_freq)
-
+                '''
+                Number of syllables and characters in the paragraph.
+                '''
                 para_syllable_count = textstat.syllable_count(str(flatten(paragraph)))
                 para_chars_count = textstat.char_count(str(flatten(paragraph)))
 
@@ -82,15 +88,25 @@ class ParagraphAnalyser:
                     counter_doc_tags += counter_para_tags
 
 
+                '''
+                Generates the POS feature dictionary for this paragraph.
+                '''
                 dict_para_percents = Helper.get_feature_percentage(relative_to=para_words_count,
                     feature=dict(counter_para_tags))
 
+
+                '''
+                Adding paragraph stopwords and char count to doc counters.
+                '''
                 doc_stpwrd_count += para_stpwrd_count
                 doc_chars_count += para_chars_count
 
                 syllable_div_words = para_syllable_count/para_words_count
                 chars_div_words = para_chars_count / para_words_count
 
+                '''
+                Assembling the details array.
+                '''
                 dict_para_percents.update({
                     'syllable_div_words': syllable_div_words,
                     'chars_div_words': chars_div_words,
@@ -100,13 +116,20 @@ class ParagraphAnalyser:
                     'least_freq_para': least_freq_para
                 })
 
+                '''
+                Assembling the features from all paragraphs of the doc.
+                '''
                 arr_all_paragraphs.append({
                     'paragraph_number': str(index),
                     'feature_percents': dict_para_percents
                 })
-                # print "\n\===============Paragraph "+str(index)+"===============\n"
-                # print arr_all_paragraphs
+                print "\n\===============Paragraph "+str(index)+"===============\n"
+                pretty_printer = pprint.PrettyPrinter(indent=2)
+                pretty_printer.pprint(arr_all_paragraphs)
 
+            '''
+            Generates the POS feature dictionary for this document.
+            '''
             dict_doc_percents = Helper.get_feature_percentage(relative_to=words_in_doc,
             feature=dict(counter_doc_tags))
 
