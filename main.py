@@ -99,6 +99,7 @@ def main():
 
         if mode == "para" or mode == "both":
             for index, item in enumerate(para_ratios):
+                print "for index ", index , ""
                 ratio = str(float(item["ratio"])+float(sent_ratios[index]["ratio"])/2.0)
                 if ratio > 0:
                     if item["ratio"]>0:

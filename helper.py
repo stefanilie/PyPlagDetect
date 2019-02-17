@@ -35,6 +35,19 @@ class Helper:
         return list(set(list1).intersection(set(list2)))
 
     '''
+    Difference of two provided lists.
+    @param list1 - [list]
+    @param list2 - [list]
+    @return [list] difference of the two lists.
+    '''
+    @staticmethod
+    def get_difference(list1, list2):
+        list1 = flatten(list1)
+        list2 = flatten(list2)
+
+        return list(set(list1).difference(set(list2)))
+
+    '''
     Method obtained from
     https://github.com/ypeels/nltk-book/blob/master/exercises/2.21-syllable-count.py
     Calculates syllable count for the provided word.

@@ -39,7 +39,8 @@ class ParagraphAnalyser:
             '''
             Getting the most and least frequent 24% words in the doc.
             '''
-            file_words = corpus.words(fileids=file_item)
+            file_words = Helper.get_difference(corpus.words(fileids=file_item),
+                                                                self.stopWords)
             words_in_doc = len(file_words)
             fdist_file = FreqDist(file_words)
             percentage = Helper.get_percentage(words=file_words, percentage=0.24)
@@ -56,6 +57,8 @@ class ParagraphAnalyser:
                 para_words_count = 0
                 para_chars_count = 0
 
+                # TODO: try to change paragraph with clean_paragraph.
+                clean_paragraph = Helper.get_difference(paragraph, self.stopWords)
 
                 fdist_paragraph = FreqDist(flatten(paragraph))
                 percentage = Helper.get_percentage(words=paragraph, percentage=0.66)
