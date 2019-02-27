@@ -85,8 +85,7 @@ class ParagraphAnalyser:
                     para_stpwrd_count += len(Helper.get_intersection(sentence, self.stopWords))
 
                     '''
-                    Simply add the values from the paragraph pos counter
-                    to the doc one.
+                    Add the values from the paragraph POS counter to the doc one.
                     '''
                     counter_doc_tags += counter_para_tags
 

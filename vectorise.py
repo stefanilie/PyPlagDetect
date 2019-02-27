@@ -3,6 +3,7 @@ from collections import Counter
 from compiler.ast import flatten
 from nltk.probability import FreqDist
 from textstat.textstat import textstat
+from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
 
 class VectorAnaliser:
     k = 4
@@ -13,6 +14,22 @@ class VectorAnaliser:
         self.corpus = corpus
         self.tagger = tagger
         self.stopWords = stopWords
+        self.tokenized = []
+
+    '''
+    Tokenizes all corpuses and generates a Frequency Distribution.
+    @return [nltk.FreqDest] Frequency Distributiion
+    ToDo: add pickle for storage after execution.
+    '''
+    def tokenize_corpuses(self):
+        self.tokenized += Helper.tokenize_corpus(gutenberg, self.stopWords)
+        self.tokenized += Helper.tokenize_corpus(movie_reviews, self.stopWords)
+        self.tokenized += Helper.tokenize_corpus(abc, self.stopWords)
+        self.tokenized += Helper.tokenize_corpus(brown, self.stopWords)
+        # self.tokenized += Helper.tokenize_corpus(reuters, self.stopWords)
+        print FreqDist(self.tokenized).most_common(10)
+
+
 
     '''
     Main method for vectorising the corpus.

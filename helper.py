@@ -1,4 +1,5 @@
 from compiler.ast import flatten
+from nltk import word_tokenize
 
 class Helper:
 
@@ -119,3 +120,18 @@ class Helper:
         tf = computeTF(term, document)
         idf = computeIDF(term, document)
         return tf * idf
+
+    '''
+    Tokenizes all files from a corpus.
+    @param corpus - [nltk.corpus]
+    @param stopWords - [nltk.stopWords] array containing all eng stopwords.
+    @return [list of strings] - tokenized array for all the corpus docs.
+    '''
+    @staticmethod
+    def tokenize_corpus(corpus, stopWords):
+        tokenized = []
+        for id in corpus.fileids():
+            raw = corpus.words(id)
+            tokenized += word_tokenize(raw)
+        tokenized = Helper.get_difference(tokenized, stopWords)
+        return tokenized

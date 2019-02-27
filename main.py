@@ -33,8 +33,8 @@ def main():
     para_ratios = []
 
     argv = sys.argv
-    if len(argv) != 2 or (argv[1] != "para" and argv[1] != "sent" and argv[1] != "both"):
-        print "Usage: python main.py [module] - *para*, *sent*, *both*"
+    if len(argv) != 2 or (argv[1] != "para" and argv[1] != "sent" and argv[1] != "vector" and argv[1] != "both"):
+        print "Usage: python main.py [module] - *para*, *sent*, *vector*, *all*"
         sys.exit()
     else:
         mode = argv[1]
@@ -59,8 +59,12 @@ def main():
         # vectorise = VectorAnaliser(corpusReader, tagger, stopWords)
         # vectorise.vectorise(corpus=corpusReader, coeficient=4)
 
+        if mode == "vector":
+            vector_analizer = VectorAnaliser(corpusReader, tagger, stopWords)
+            vector_analizer.tokenize_corpuses()
+
         # Analizing paragraphs for features and outputting an object.
-        if mode == "para" or mode == "both":
+        if mode == "para" or mode == "all":
             para_analyser = ParagraphAnalyser(corpusReader, tagger, stopWords)
             feature_arr = para_analyser.compute_paragraph_features(corpus=corpusReader)
             feature_arr = para_analyser.classify_chunks_paragraph(feature_dict=feature_arr,
@@ -80,7 +84,7 @@ def main():
         # print "\n\===============Data after feature classification===============\n"
         # pretty_printer.pprint(feature_arr)
 
-        if mode == "sent" or mode == "both":
+        if mode == "sent" or mode == "all":
             sentence_analiyser = SentenceAnalyser(corpusReader, tagger, stopWords)
             sent_feat_arr = sentence_analiyser.compute_sentence_features(corpusReader)
             sent_feat_arr = sentence_analiyser.classify_chunks_sentence(sent_feat_arr, corpusReader)
@@ -97,7 +101,7 @@ def main():
                         "ratio": 0
                     })
 
-        if mode == "para" or mode == "both":
+        if mode == "para" or mode == "all":
             for index, item in enumerate(para_ratios):
                 print "for index ", index , ""
                 ratio = str(float(item["ratio"])+float(sent_ratios[index]["ratio"])/2.0)
