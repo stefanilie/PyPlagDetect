@@ -3,7 +3,7 @@ import re
 import sys
 import math
 import nltk
-import config
+from src.config import PATH
 import string
 import pprint
 
@@ -13,9 +13,9 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict, treebank
 from nltk.tag import UnigramTagger
 
-from paragraph import ParagraphAnalyser
-from sentence import SentenceAnalyser
-from vectorise import VectorAnaliser
+from src.paragraph import ParagraphAnalyser
+from src.sentence import SentenceAnalyser
+from src.vectorise import VectorAnaliser
 # load the resources
 
 
@@ -40,10 +40,10 @@ def main():
         mode = argv[1]
 
         # setting the PATH
-        os.chdir(config.PATH)
+        os.chdir(PATH)
 
         # initialising the corpus reader to the docs path
-        corpusReader = PlaintextCorpusReader(config.PATH, '.*\.txt')
+        corpusReader = PlaintextCorpusReader(PATH, '.*\.txt')
 
         # setting stopwords
         stopWords = set(stopwords.words('english'))

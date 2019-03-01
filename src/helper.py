@@ -1,5 +1,7 @@
 from compiler.ast import flatten
 from nltk import word_tokenize
+from nltk.corpus.reader.tagged import CategorizedTaggedCorpusReader
+from nltk.corpus.util import LazyCorpusLoader
 
 class Helper:
 
@@ -128,10 +130,24 @@ class Helper:
     @return [list of strings] - tokenized array for all the corpus docs.
     '''
     @staticmethod
-    def tokenize_corpus(corpus, stopWords):
+    def tokenize_corpus(corpus, stopWords, cathegorized=False):
+        print "==========="
+        print "Tokenizeing ", corpus
         tokenized = []
-        for id in corpus.fileids():
-            raw = corpus.words(id)
-            tokenized += word_tokenize(raw)
+        # TODO: make case for corpus is brown (cathegorised).
+        if not cathegorized: 
+            for id in corpus.fileids():
+                print "1-------file------"
+                print id
+                raw = corpus.raw(id)
+                tokenized += word_tokenize(raw)        
+        else:
+            print "2-------cathegory------"
+            print type(corpus)
+            if type(corpus) is LazyCorpusLoader:
+                print "on the right path"
+                tokenized += corpus.words()
+            else:
+                tokenized += word_tokenize(corpus.raw())       
         tokenized = Helper.get_difference(tokenized, stopWords)
         return tokenized

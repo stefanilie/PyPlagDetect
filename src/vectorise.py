@@ -25,8 +25,8 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(gutenberg, self.stopWords)
         self.tokenized += Helper.tokenize_corpus(movie_reviews, self.stopWords)
         self.tokenized += Helper.tokenize_corpus(abc, self.stopWords)
-        self.tokenized += Helper.tokenize_corpus(brown, self.stopWords)
-        # self.tokenized += Helper.tokenize_corpus(reuters, self.stopWords)
+        self.tokenized += Helper.tokenize_corpus(brown, self.stopWords, True)
+        self.tokenized += Helper.tokenize_corpus(reuters, self.stopWords, True)
         print FreqDist(self.tokenized).most_common(10)
 
 
