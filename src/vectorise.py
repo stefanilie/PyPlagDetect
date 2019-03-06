@@ -22,15 +22,14 @@ class VectorAnaliser:
     @return [nltk.FreqDest] Frequency Distributiion
     ToDo: add pickle for storage after execution.
     '''
-    def tokenize_corpuses(self):
+    def tokenize_corpuses(self, file_name):
         self.tokenized += Helper.tokenize_corpus(gutenberg, self.stopWords)
         self.tokenized += Helper.tokenize_corpus(movie_reviews, self.stopWords)
         self.tokenized += Helper.tokenize_corpus(abc, self.stopWords)
         self.tokenized += Helper.tokenize_corpus(brown, self.stopWords, True)
         self.tokenized += Helper.tokenize_corpus(reuters, self.stopWords, True)
         self.tokenized += Helper.tokenize_corpus(self.corpus, self.stopWords)
-        Helper.create_dump(self.tokenized, "tokenized.pickle")
-        print FreqDist(self.tokenized).most_common(10)
+        Helper.create_dump(self.tokenized, file_name)
 
 
 
@@ -38,7 +37,16 @@ class VectorAnaliser:
     Main method for vectorising the corpus.
     @param corpus:
     '''
-    def vectorise(self, corpus, coeficient):
+    def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
+        file_name = "tokenized.pickle"
+       
+        # check if tokenized is done.
+        if not len(self.tokenized) and not should_tokenize_corpuses:
+            tokenized_array = Helper.read_dump(file_name)
+            print FreqDist(tokenized_array).most_common(10)
+        elif not len(self.tokenized) and should_tokenize_corpuses:
+            self.tokenize_corpuses(file_name)
+
         files= corpus.fileids()
         # temporary value for k.
         # will be changed after developing a learning algorithm.

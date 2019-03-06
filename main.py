@@ -68,7 +68,11 @@ def main():
             if decision==1:
                 trainingCorpusReader=PlaintextCorpusReader(TRAINING, '.*\.txt')
                 vector_analizer = VectorAnaliser(trainingCorpusReader, tagger, stopWords)
-                vector_analizer.tokenize_corpuses()
+                vector_analizer.vectorise(corpusReader, should_tokenize_corpuses=True)
+            if decision==2:
+                vector_analizer = VectorAnaliser(corpusReader, tagger, stopWords)
+                vector_analizer.vectorise(corpusReader)
+
 
         # Analizing paragraphs for features and outputting an object.
         if mode == "para" or mode == "all":

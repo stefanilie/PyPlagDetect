@@ -176,3 +176,17 @@ class Helper:
 
         # reverting to previous directory
         os.chdir(current_directory)
+
+    @staticmethod
+    def read_dump(file_name):
+         # saving current directory
+        current_directory=os.getcwd()
+        
+        # chaning it to the data dumps one
+        os.chdir(DUMPS)
+
+        tokenized_file = open(file_name, "rb")
+        tokenized_dump = pickle.load(tokenized_file)
+        tokenized_file.close()
+
+        return tokenized_dump;
