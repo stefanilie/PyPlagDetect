@@ -3,7 +3,7 @@ import re
 import sys
 import math
 import nltk
-from src.config import PATH
+from src.config import SUSPICIOUS, TRAINING
 import string
 import pprint
 
@@ -28,22 +28,22 @@ def downloadNLTKResources():
 
 def main():
     # downloadNLTKResources()
-    mode = "";
+    mode = ""
     sent_ratios = []
     para_ratios = []
 
     argv = sys.argv
-    if len(argv) != 2 or (argv[1] != "para" and argv[1] != "sent" and argv[1] != "vector" and argv[1] != "both"):
+    if len(argv) != 2 or (argv[1] not in ["para", "sent", "vector", "both"]):
         print "Usage: python main.py [module] - *para*, *sent*, *vector*, *all*"
         sys.exit()
     else:
         mode = argv[1]
 
         # setting the PATH
-        os.chdir(PATH)
+        os.chdir(SUSPICIOUS)
 
         # initialising the corpus reader to the docs path
-        corpusReader = PlaintextCorpusReader(PATH, '.*\.txt')
+        corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
 
         # setting stopwords
         stopWords = set(stopwords.words('english'))
@@ -60,8 +60,15 @@ def main():
         # vectorise.vectorise(corpus=corpusReader, coeficient=4)
 
         if mode == "vector":
-            vector_analizer = VectorAnaliser(corpusReader, tagger, stopWords)
-            vector_analizer.tokenize_corpuses()
+            decision = ''
+            print "1. Tokenize and export dump via Pickle"
+            print "2. Import from Pickle"
+            decision = int(raw_input("Choose action: "))
+
+            if decision==1:
+                trainingCorpusReader=PlaintextCorpusReader(TRAINING, '.*\.txt')
+                vector_analizer = VectorAnaliser(trainingCorpusReader, tagger, stopWords)
+                vector_analizer.tokenize_corpuses()
 
         # Analizing paragraphs for features and outputting an object.
         if mode == "para" or mode == "all":

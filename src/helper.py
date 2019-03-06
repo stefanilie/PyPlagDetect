@@ -1,3 +1,7 @@
+import os
+import pickle
+from src.config import SUSPICIOUS, DUMPS
+
 from compiler.ast import flatten
 from nltk import word_tokenize
 from nltk.corpus.reader.tagged import CategorizedTaggedCorpusReader
@@ -134,7 +138,6 @@ class Helper:
         print "==========="
         print "Tokenizeing ", corpus
         tokenized = []
-        # TODO: make case for corpus is brown (cathegorised).
         if not cathegorized: 
             for id in corpus.fileids():
                 print "1-------file------"
@@ -151,3 +154,25 @@ class Helper:
                 tokenized += word_tokenize(corpus.raw())       
         tokenized = Helper.get_difference(tokenized, stopWords)
         return tokenized
+
+
+    '''
+    Creates data dump for tokenization to destination file.
+    @param tokenized - [list of strings] Tokenized array of words.
+    @param destination - [string] File on which the data will be written.
+    '''
+    @staticmethod
+    def create_dump(tokenized, destination):
+        # saving current directory
+        current_directory=os.getcwd()
+        
+        # chaning it to the data dumps one
+        os.chdir(DUMPS)
+
+        # dumping data with pickle
+        save_tokenized=open(destination, "wb")
+        pickle.dump(tokenized, save_tokenized)
+        save_tokenized.close()
+
+        # reverting to previous directory
+        os.chdir(current_directory)

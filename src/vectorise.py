@@ -1,3 +1,4 @@
+import pickle
 from helper import Helper
 from collections import Counter
 from compiler.ast import flatten
@@ -27,6 +28,8 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(abc, self.stopWords)
         self.tokenized += Helper.tokenize_corpus(brown, self.stopWords, True)
         self.tokenized += Helper.tokenize_corpus(reuters, self.stopWords, True)
+        self.tokenized += Helper.tokenize_corpus(self.corpus, self.stopWords)
+        Helper.create_dump(self.tokenized, "tokenized.pickle")
         print FreqDist(self.tokenized).most_common(10)
 
 
