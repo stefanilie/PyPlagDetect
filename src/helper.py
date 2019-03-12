@@ -123,18 +123,20 @@ class Helper:
     '''
     @staticmethod
     def compute_TF_IDF(term, document):
-        tf = computeTF(term, document)
-        idf = computeIDF(term, document)
+        tf = Helper.compute_TF(term, document)
+        idf = Helper.compute_IDF(term, document)
         return tf * idf
 
     '''
     Tokenizes all files from a corpus.
     @param corpus - [nltk.corpus]
     @param stopWords - [nltk.stopWords] array containing all eng stopwords.
+    @param cathegorized - [Boolean] if corpus is categorized or not.
+    @param with_stop_words - [Boolean] if stop words should be excluded or not.
     @return [list of strings] - tokenized array for all the corpus docs.
     '''
     @staticmethod
-    def tokenize_corpus(corpus, stopWords, cathegorized=False):
+    def tokenize_corpus(corpus, stopWords, cathegorized=False, with_stop_words=False):
         print "==========="
         print "Tokenizeing ", corpus
         tokenized = []
@@ -148,11 +150,11 @@ class Helper:
             print "2-------cathegory------"
             print type(corpus)
             if type(corpus) is LazyCorpusLoader:
-                print "on the right path"
                 tokenized += corpus.words()
             else:
                 tokenized += word_tokenize(corpus.raw())       
-        tokenized = Helper.get_difference(tokenized, stopWords)
+        if not with_stop_words:
+            tokenized = Helper.get_difference(tokenized, stopWords)
         return tokenized
 
 
@@ -177,6 +179,11 @@ class Helper:
         # reverting to previous directory
         os.chdir(current_directory)
 
+    '''
+    Reads data dump of tokenized corpus/
+    @param file_name - [string] File name of the data dump.
+    @returns tokenized_dump - [string array] Tokenized words. 
+    '''
     @staticmethod
     def read_dump(file_name):
          # saving current directory
@@ -190,3 +197,5 @@ class Helper:
         tokenized_file.close()
 
         return tokenized_dump;
+
+    

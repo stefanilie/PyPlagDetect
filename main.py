@@ -25,6 +25,9 @@ Downloads all of the nltk resources.
 def downloadNLTKResources():
     nltk.download('all')
 
+def exitWithMessage(message): 
+    print message
+    sys.exit()
 
 def main():
     # downloadNLTKResources()
@@ -34,8 +37,7 @@ def main():
 
     argv = sys.argv
     if len(argv) != 2 or (argv[1] not in ["para", "sent", "vector", "both"]):
-        print "Usage: python main.py [module] - *para*, *sent*, *vector*, *all*"
-        sys.exit()
+        exitWithMessage("Usage: python main.py [module] - *para*, *sent*, *vector*, *all*")
     else:
         mode = argv[1]
 
@@ -56,22 +58,32 @@ def main():
         train_sents = treebank.tagged_sents()[:5000]
         tagger = UnigramTagger(train_sents)
 
-        # vectorise = VectorAnaliser(corpusReader, tagger, stopWords)
-        # vectorise.vectorise(corpus=corpusReader, coeficient=4)
-
         if mode == "vector":
+            isReady = False
             decision = ''
-            print "1. Tokenize and export dump via Pickle"
-            print "2. Import from Pickle"
-            decision = int(raw_input("Choose action: "))
 
+            # basic menu
+            while(not isReady):
+                print "1. Tokenize and export dump via Pickle"
+                print "2. Import using Pickle"
+                try:
+                    decision = raw_input("Choose action: ")
+                    decision = int(decision)
+                except ValueError:
+                    print "Option '{0}' doesn't exist.".format(decision)
+                if decision not in [1, 2]:
+                    print "Option '{0}' doesn't exist.".format(decision)
+                else:
+                    isReady = True
             if decision==1:
                 trainingCorpusReader=PlaintextCorpusReader(TRAINING, '.*\.txt')
                 vector_analizer = VectorAnaliser(trainingCorpusReader, tagger, stopWords)
                 vector_analizer.vectorise(corpusReader, should_tokenize_corpuses=True)
-            if decision==2:
+            elif decision==2:
                 vector_analizer = VectorAnaliser(corpusReader, tagger, stopWords)
                 vector_analizer.vectorise(corpusReader)
+            else:
+                print "Option '{0}' doesn't exist.".format(decision)
 
 
         # Analizing paragraphs for features and outputting an object.
