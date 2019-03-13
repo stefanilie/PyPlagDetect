@@ -35,16 +35,38 @@ class VectorAnaliser:
         Helper.create_dump(self.tokenized, file_name)
 
 
+    def sliding_window(self, sequence, winSize, step=1):
+        """Returns a generator that will iterate through
+        the defined chunks of input sequence.  Input sequence
+        must be iterable."""
+    
+        # Verify the inputs
+        try: it = iter(sequence)
+        except TypeError:
+            raise Exception("**ERROR** sequence must be iterable.")
+        if not ((type(winSize) == type(0)) and (type(step) == type(0))):
+            raise Exception("**ERROR** type(winSize) and type(step) must be int.")
+        if step > winSize:
+            raise Exception("**ERROR** step must not be larger than winSize.")
+        if winSize > len(sequence):
+            raise Exception("**ERROR** winSize must not be larger than sequence length.")
+    
+        # Pre-compute number of chunks to emit
+        numOfChunks = ((len(sequence)-winSize)/step)+1
+    
+        # Do the work
+        for i in range(0,numOfChunks*step,step):
+            yield sequence[i:i+winSize]
+
+
     '''
     Calculates average word frequency class.
     @param words - [array string] words that need to be analysed.
     '''
-    def average_word_frequecy_class(self, words):
+    def average_word_frequecy_class(self, words, most_common_word_freq, suspicious_freq_dist):
         awf = []
         pcf = []
         window_freq_dist = FreqDist(words)
-        most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
-        suspicious_freq_dist = FreqDist(self.suspect_corpus_tokenized)
         for word in words:
             word_freq = 1 if not suspicious_freq_dist[word] else suspicious_freq_dist[word]
             awf.append(log(float(most_common_word_freq)/word_freq)/log(2))
@@ -70,30 +92,18 @@ class VectorAnaliser:
 
         files= corpus.fileids()
         self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
+        suspicious_freq_dist = FreqDist(self.suspect_corpus_tokenized)
+        most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
+
         # temporary value for k.
         # will be changed after developing a learning algorithm.
         k=coeficient
         for file_item in files:
             # TODO: replace with nltk.sent_tokenizer
             sentences = corpus.sents(fileids=file_item)
-            for index, sentence in enumerate(sentences):
-                arr_sentences = []
-                '''
-                Window is represented by all k+1 items.
-                Until index is equal to k/2, it will jump.
-                After, it will pass through until index+k is equal to length.
-                '''
-                if index-k/2 >=0 and index+k/2<=len(sentences):
-                    arr_sentences = sentences[index-k/2:index+k/2]
-                    words=[]
-                    # TODO: rplace with flatten
-                    for sent in arr_sentences:
-                        words.extend(sent)
-                    self.average_word_frequecy_class(words)
-                    # calculate/tokenize corpus with FreqDist
-                    # class should have as atribute content of 
-                        # tokenized huge corpus
-                        # tokenized analisis suspect corpus.
+            windows = self.slidingWindow(sentences, k)
+            for window in windows:
+                self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist)
 
     #             compute_word_frequency(arr_sentences)
     #             compute_punctuation(arr_sentences)
