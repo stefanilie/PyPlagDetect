@@ -72,10 +72,34 @@ class VectorAnaliser:
             awf.append(log(float(most_common_word_freq)/word_freq)/log(2))
 
             if word in string.punctuation:
-                pcf.append((word, window_freq_dist[word]))
+                pcf.append((word, window_freq_dist[word]))            
 
-        print "-------------------"
-        print "pcf: ", pcf
+        # TODO: return result list
+        # print "-------------------"
+        # print "pcf: ", pcf
+
+
+    '''
+    Return FreqDist of all POS tokenized sentences.
+    '''
+    def compute_POS(self, sentences):
+        arr_tagged_sents=[]
+        pronouns = []
+        arr_stop_words = []
+        for sentence in sentences:
+            tagged_sent = self.tagger.tag(sentence)
+            for word, tag in tagged_sent:
+                if word in self.stop_words:
+                    arr_stop_words.append(word)
+                if tag == 'PRP':
+                    pronouns.append(word)
+            arr_tagged_sents.extend(tagged_sent)
+
+        # TODO: return dict with freqDist with
+            # tagged sents
+            # pronouns
+        return FreqDist(flatten(arr_tagged_sents))
+
     '''
     Main method for vectorising the corpus.
     @param corpus:
@@ -101,13 +125,14 @@ class VectorAnaliser:
         for file_item in files:
             # TODO: replace with nltk.sent_tokenizer
             sentences = corpus.sents(fileids=file_item)
-            windows = self.slidingWindow(sentences, k)
+            windows = self.sliding_window(sentences, k)
             for window in windows:
                 self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist)
+                self.compute_POS(window)
+
 
     #             compute_word_frequency(arr_sentences)
     #             compute_punctuation(arr_sentences)
-    #             compute_POS(arr_sentences)
     #             compute_pronouns(arr_sentences)
     #             compute_closed_class_words(arr_sentences)
     #

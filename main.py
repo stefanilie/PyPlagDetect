@@ -55,7 +55,7 @@ def main():
         pretty_printer = pprint.PrettyPrinter(indent=2)
 
         # Training a unigram part of speech tagger
-        train_sents = treebank.tagged_sents()[:5000]
+        train_sents = treebank.tagged_sents()
         tagger = UnigramTagger(train_sents)
 
         if mode == "vector":
