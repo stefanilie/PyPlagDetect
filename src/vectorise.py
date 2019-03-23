@@ -114,7 +114,8 @@ class VectorAnaliser:
         elif not len(self.tokenized) and should_tokenize_corpuses:
             self.tokenize_corpuses(file_name)
 
-        files= corpus.fileids()
+        # Tokenizing suspicious corpus and getting most common from HUGE corpus.
+        files = corpus.fileids()
         self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
         suspicious_freq_dist = FreqDist(self.suspect_corpus_tokenized)
         most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]

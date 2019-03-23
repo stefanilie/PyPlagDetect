@@ -1,9 +1,10 @@
 import os
 import pickle
 from src.config import SUSPICIOUS, DUMPS
-
+import numpy as np
 from compiler.ast import flatten
 from nltk import word_tokenize
+from sklearn.metrics.pairwise import cosine_similarity
 from nltk.corpus.reader.tagged import CategorizedTaggedCorpusReader
 from nltk.corpus.util import LazyCorpusLoader
 
@@ -196,6 +197,32 @@ class Helper:
         tokenized_dump = pickle.load(tokenized_file)
         tokenized_file.close()
 
-        return tokenized_dump;
+        return tokenized_dump
 
-    
+    '''
+    Calculates the cosine similarity between the window sentences and mean document
+    feature arrays. Uses scikit learn method for this.
+    TODO: Window and Document MUST be matrices, so don't forget to enclose them inside []
+
+    sent_count: number of document sentences.
+    # todo: refactor so that it return a matrix of arrays of cosine similarities that can be reused in sttdev and mean.
+    '''
+    @staticmethod
+    def cosine_similarity(sent_array, document, sent_count):
+        for 
+        return 1/sent_count * cosine_similarity(sent_array, document)
+
+    @staticmethod
+    def stddev(sent_array, document_array, mean):
+        sum = 0
+        for sent in sent_array:
+            # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
+            # TODO: check to see .sum methid from numpy 
+            sum += np.square(np.array(cosine_similarity(sent, document_array)) - np.array(mean))
+        return math.sqrt(1/len(sent_array)*sum)
+
+    # @staticmethod
+    # def trigger_suspect()
+
+        
+
