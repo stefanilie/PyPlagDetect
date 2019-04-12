@@ -202,27 +202,62 @@ class Helper:
     '''
     Calculates the cosine similarity between the window sentences and mean document
     feature arrays. Uses scikit learn method for this.
-    TODO: Window and Document MUST be matrices, so don't forget to enclose them inside []
+    @param sent_array - [[array]] statistics for all windiws/sentences in the doc
+    @param document - [array] statistics for the whole document
+    @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
+
+    TODO: sent_array and Document MUST be matrices, so don't forget to enclose them inside []
 
     sent_count: number of document sentences.
     # todo: refactor so that it return a matrix of arrays of cosine similarities that can be reused in sttdev and mean.
+
     '''
     @staticmethod
-    def cosine_similarity(sent_array, document, sent_count):
-        for 
-        return 1/sent_count * cosine_similarity(sent_array, document)
+    def compute_cosine_similarity_array(sent_array, document):
+        cs_sum=0
+        cosine_array=[]
+        dict_reply={}
+        sent_count = len(sent_array)
 
+        for sentence in sent_array:
+            cs = cosine_similarity(sentence, document)
+            cs_sum+=cs
+            cosine_array.append(cs)
+
+        if len(cosine_array):
+            mean = 1/sent_count * cs_sum
+            dict_reply['mean'] = mean
+            dict_reply['cosine_array'] = cosine_array
+
+        return dict_reply
+
+    
+    '''
+    Computes standard deviation for the provided sentences array.
+    @param sent_array - [array] sentence statistics
+    @param cosine_similarity_array - [array] calculated cosine similarity array for all the sentences
+    @param mean - [float] mean cosine similarity
+    @return [float] standard deviation of the for the annalized widow.
+    '''
     @staticmethod
-    def stddev(sent_array, document_array, mean):
-        sum = 0
-        for sent in sent_array:
+    def stddev(sent_array, cosine_similarity_array, mean):
+        sum=0
+        for sent, index in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
-            # TODO: check to see .sum methid from numpy 
-            sum += np.square(np.array(cosine_similarity(sent, document_array)) - np.array(mean))
+            # TODO: check to see .sum methid from numpy
+            sum += np.square(np.array(cosine_similarity_array[index]) - np.array(mean))
         return math.sqrt(1/len(sent_array)*sum)
-
-    # @staticmethod
-    # def trigger_suspect()
+            
+    '''
+    Decides if annalized part of the document is plagiarised or not.
+    @param cosine_similarity_value - [float] 
+    @param mean - [float]
+    @param stddev - [float]
+    @return [boolean]
+    '''
+    @staticmethod
+    def trigger_suspect(cosine_similarity_value, mean, stddev):
+        return cosine_similarity_value < mean - e*stddev
 
         
 

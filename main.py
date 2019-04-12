@@ -57,6 +57,7 @@ def main():
         # Training a unigram part of speech tagger
         train_sents = treebank.tagged_sents()
         tagger = UnigramTagger(train_sents)
+        # TODO: train this tagger with a huge corpus.
 
         if mode == "vector":
             isReady = False

@@ -60,7 +60,7 @@ class VectorAnaliser:
 
 
     '''
-    Calculates average word frequency class.
+    Calculates average word and punctuation classes.
     @param words - [array string] words that need to be analysed.
     '''
     def average_word_frequecy_class(self, words, most_common_word_freq, suspicious_freq_dist):
@@ -68,16 +68,15 @@ class VectorAnaliser:
         pcf = []
         window_freq_dist = FreqDist(words)
         for word in words:
-            word_freq = 1 if not suspicious_freq_dist[word] else suspicious_freq_dist[word]
-            awf.append(log(float(most_common_word_freq)/word_freq)/log(2))
-
             if word in string.punctuation:
-                pcf.append((word, window_freq_dist[word]))            
+                pcf.append((word, window_freq_dist[word]))   
+            else:
+                word_freq = 1 if not suspicious_freq_dist[word] else suspicious_freq_dist[word]
+                awf.append(log(float(most_common_word_freq)/word_freq)/log(2))         
 
         # TODO: return result list
         # print "-------------------"
         # print "pcf: ", pcf
-
 
     '''
     Return FreqDist of all POS tokenized sentences.
@@ -98,6 +97,7 @@ class VectorAnaliser:
         # TODO: return dict with freqDist with
             # tagged sents
             # pronouns
+            # print FreqDist(flatten(arr_tagged_sents)).most_common(10)
         return FreqDist(flatten(arr_tagged_sents))
 
     '''
