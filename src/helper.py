@@ -203,7 +203,7 @@ class Helper:
     Calculates the cosine similarity between the window sentences and mean document
     feature arrays. Uses scikit learn method for this.
     @param sent_array - [[array]] statistics for all windiws/sentences in the doc
-    @param document - [array] statistics for the whole document
+    @param document - [[array]] statistics for the whole document
     @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
 
     TODO: sent_array and Document MUST be matrices, so don't forget to enclose them inside []
@@ -220,7 +220,7 @@ class Helper:
         sent_count = len(sent_array)
 
         for sentence in sent_array:
-            cs = cosine_similarity(sentence, document)
+            cs = cosine_similarity([sentence], [document])
             cs_sum+=cs
             cosine_array.append(cs)
 
@@ -228,10 +228,13 @@ class Helper:
             mean = 1/sent_count * cs_sum
             dict_reply['mean'] = mean
             dict_reply['cosine_array'] = cosine_array
-
+        pdb.set_trace()
         return dict_reply
 
-    
+    @staticmethod
+    def normalize_vector(vector):
+        return np.linalg.norm(vector)
+
     '''
     Computes standard deviation for the provided sentences array.
     @param sent_array - [array] sentence statistics
@@ -258,6 +261,5 @@ class Helper:
     @staticmethod
     def trigger_suspect(cosine_similarity_value, mean, stddev):
         return cosine_similarity_value < mean - e*stddev
-
         
 

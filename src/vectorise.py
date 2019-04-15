@@ -1,3 +1,4 @@
+import pdb
 import pickle
 import string
 from math import log
@@ -7,6 +8,7 @@ from compiler.ast import flatten
 from nltk.probability import FreqDist
 from textstat.textstat import textstat
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
+
 
 class VectorAnaliser:
     k = 4
@@ -62,43 +64,56 @@ class VectorAnaliser:
     '''
     Calculates average word and punctuation classes.
     @param words - [array string] words that need to be analysed.
+    @param most_common_word_freq - [int] frequency of the most common word in a huge corpus
+    @param suspicious_freq_dist - [array FreqDist] freq distribution of the suspect corpus
+
+    TODO: check if dividing by word_freq is right. Might need to see value in relation 
+    to huge corpus not window. 
     '''
     def average_word_frequecy_class(self, words, most_common_word_freq, suspicious_freq_dist):
+        toReturn=[]
         awf = []
         pcf = []
         window_freq_dist = FreqDist(words)
         for word in words:
             if word in string.punctuation:
-                pcf.append((word, window_freq_dist[word]))   
+                pcf.append(window_freq_dist[word])   
             else:
                 word_freq = 1 if not suspicious_freq_dist[word] else suspicious_freq_dist[word]
                 awf.append(log(float(most_common_word_freq)/word_freq)/log(2))         
 
-        # TODO: return result list
-        # print "-------------------"
-        # print "pcf: ", pcf
+        toReturn.append(Helper.normalize_vector(awf))
+        toReturn.append(Helper.normalize_vector(pcf))
 
+
+        return toReturn
+        
     '''
     Return FreqDist of all POS tokenized sentences.
+    TODO: find a way to normalize this vector to unitary value
     '''
     def compute_POS(self, sentences):
+        toReturn=[]
         arr_tagged_sents=[]
         pronouns = []
         arr_stop_words = []
+        words_freq_dist = FreqDist(flatten(sentences))
         for sentence in sentences:
             tagged_sent = self.tagger.tag(sentence)
             for word, tag in tagged_sent:
                 if word in self.stop_words:
-                    arr_stop_words.append(word)
+                    arr_stop_words.append(words_freq_dist[word])
                 if tag == 'PRP':
-                    pronouns.append(word)
+                    pronouns.append(words_freq_dist[word])
             arr_tagged_sents.extend(tagged_sent)
 
-        # TODO: return dict with freqDist with
-            # tagged sents
-            # pronouns
-            # print FreqDist(flatten(arr_tagged_sents)).most_common(10)
-        return FreqDist(flatten(arr_tagged_sents))
+        toReturn.append(Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values()))
+        toReturn.append(Helper.normalize_vector(pronouns))
+        toReturn.append(Helper.normalize_vector(arr_stop_words))
+
+        # TODO: remove None posibility for the below FreqDist
+        # TODO: see why we don;t detect pronouns and see how can we fix this.
+        return toReturn
 
     '''
     Main method for vectorising the corpus.
@@ -124,21 +139,25 @@ class VectorAnaliser:
         # will be changed after developing a learning algorithm.
         k=coeficient
         for file_item in files:
+            windows_total = []
+            doc_mean_vector = []
+
             # TODO: replace with nltk.sent_tokenizer
             sentences = corpus.sents(fileids=file_item)
             windows = self.sliding_window(sentences, k)
+            # for window in windows:
+            #     windows_total.append(self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist))
+            #     windows_total[-1].extend(self.compute_POS(window))
+            #     windows_total[-1] = Helper.normalize_vector(windows_total[-1])
+            
+            # doc_mean_vector.append(Helper.normalize_vector(windows_total))
+            # dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
+            
             for window in windows:
-                self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist)
-                self.compute_POS(window)
+                windows_total.append(self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist))
+                windows_total[-1].extend(self.compute_POS(window))
+                doc_mean_vector.append(Helper.normalize_vector(windows_total[-1]))
+            dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
+            
 
 
-    #             compute_word_frequency(arr_sentences)
-    #             compute_punctuation(arr_sentences)
-    #             compute_pronouns(arr_sentences)
-    #             compute_closed_class_words(arr_sentences)
-    #
-    # '''
-    # Computes the number of punctuation signs
-    # '''
-    # def compute_punctuation(self, arr_sentences):
-    #     return False
