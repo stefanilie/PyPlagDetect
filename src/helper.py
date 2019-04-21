@@ -1,3 +1,4 @@
+import pdb
 import os
 import pickle
 from src.config import SUSPICIOUS, DUMPS
@@ -5,6 +6,7 @@ import numpy as np
 from compiler.ast import flatten
 from nltk import word_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.preprocessing import normalize
 from nltk.corpus.reader.tagged import CategorizedTaggedCorpusReader
 from nltk.corpus.util import LazyCorpusLoader
 
@@ -206,7 +208,9 @@ class Helper:
     @param document - [[array]] statistics for the whole document
     @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
 
-    TODO: sent_array and Document MUST be matrices, so don't forget to enclose them inside []
+    TODO: sent_array and Document MUST be matrices
+    TODO: refactor to be same length
+    
 
     sent_count: number of document sentences.
     # todo: refactor so that it return a matrix of arrays of cosine similarities that can be reused in sttdev and mean.
@@ -220,7 +224,7 @@ class Helper:
         sent_count = len(sent_array)
 
         for sentence in sent_array:
-            cs = cosine_similarity([sentence], [document])
+            cs = cosine_similarity([[sentence]], [document])
             cs_sum+=cs
             cosine_array.append(cs)
 
@@ -228,12 +232,14 @@ class Helper:
             mean = 1/sent_count * cs_sum
             dict_reply['mean'] = mean
             dict_reply['cosine_array'] = cosine_array
-        pdb.set_trace()
         return dict_reply
 
     @staticmethod
     def normalize_vector(vector):
-        return np.linalg.norm(vector)
+        # pdb.set_trace()
+        # return np.linalg.norm(vector)
+        return normalize(vector)
+
 
     '''
     Computes standard deviation for the provided sentences array.

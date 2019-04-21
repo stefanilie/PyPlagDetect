@@ -1,6 +1,7 @@
 import pdb
 import pickle
 import string
+import numpy as np
 from math import log
 from helper import Helper
 from collections import Counter
@@ -69,6 +70,8 @@ class VectorAnaliser:
 
     TODO: check if dividing by word_freq is right. Might need to see value in relation 
     to huge corpus not window. 
+
+    =========================DEPRECATED=========================================
     '''
     def average_word_frequecy_class(self, words, most_common_word_freq, suspicious_freq_dist):
         toReturn=[]
@@ -87,10 +90,42 @@ class VectorAnaliser:
 
 
         return toReturn
+
+    def new_avf(self, sentences, most_common_word_freq, suspicious_freq_dist):
+        awf=[]
+        pcf=[]
+        stp = []
+        prn = []
+        arr_tagged_sents=[]
         
+
+        words = flatten(sentences)
+        fdist = FreqDist(words)
+        for item in suspicious_freq_dist:
+            isInWindow = True if item in words else False
+            if isInWindow: 
+                word_freq = 1 if not suspicious_freq_dist[item] else suspicious_freq_dist[item]
+                awf.append(log(float(most_common_word_freq)/word_freq)/log(2))         
+                pcf.append(fdist[item] if item in string.punctuation else 0)
+                stp.append(fdist[item] if item in self.stop_words else 0)
+                # TODO: check if iterating sentences we have issues with 
+                # double values due to iterating also though docFreqDist
+                # prn.append(fdist[item] if tag == 'PRP' else 0)
+            awf.append(0)
+            pcf.append(0)
+            stp.append(0)
+        
+        awf = Helper.normalize_vector([awf])
+        pcf = Helper.normalize_vector([pcf])
+        stp = Helper.normalize_vector([stp])
+        
+        toReturn = np.concatenate((awf, pcf))
+        toReturn = np.concatenate((toReturn, stp))
+        return Helper.normalize_vector(toReturn)
+            
+
     '''
     Return FreqDist of all POS tokenized sentences.
-    TODO: find a way to normalize this vector to unitary value
     '''
     def compute_POS(self, sentences):
         toReturn=[]
@@ -108,13 +143,14 @@ class VectorAnaliser:
             arr_tagged_sents.extend(tagged_sent)
 
         toReturn.append(Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values()))
+        Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values())
         toReturn.append(Helper.normalize_vector(pronouns))
         toReturn.append(Helper.normalize_vector(arr_stop_words))
 
         # TODO: remove None posibility for the below FreqDist
         # TODO: see why we don;t detect pronouns and see how can we fix this.
         return toReturn
-
+        
     '''
     Main method for vectorising the corpus.
     @param corpus:
@@ -145,6 +181,7 @@ class VectorAnaliser:
             # TODO: replace with nltk.sent_tokenizer
             sentences = corpus.sents(fileids=file_item)
             windows = self.sliding_window(sentences, k)
+            # !!!!!!!!reduction to single unit
             # for window in windows:
             #     windows_total.append(self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist))
             #     windows_total[-1].extend(self.compute_POS(window))
@@ -153,11 +190,15 @@ class VectorAnaliser:
             # doc_mean_vector.append(Helper.normalize_vector(windows_total))
             # dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
             
+            #  cu concatenare
             for window in windows:
-                windows_total.append(self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist))
-                windows_total[-1].extend(self.compute_POS(window))
-                doc_mean_vector.append(Helper.normalize_vector(windows_total[-1]))
-            dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
+                # windows_total.append(self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist))
+                windows_total.append(self.new_avf(window, most_common_word_freq, suspicious_freq_dist))
+
+                # windows_total[-1].extend(self.compute_POS(window))
+                # doc_mean_vector.append(Helper.normalize_vector(windows_total[-1]))
+            # pdb.set_trace()
+            # dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
             
 
 
