@@ -111,9 +111,10 @@ class VectorAnaliser:
                 # TODO: check if iterating sentences we have issues with 
                 # double values due to iterating also though docFreqDist
                 # prn.append(fdist[item] if tag == 'PRP' else 0)
-            awf.append(0)
-            pcf.append(0)
-            stp.append(0)
+            else:
+                awf.append(0)
+                pcf.append(0)
+                stp.append(0)
         
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
@@ -189,16 +190,38 @@ class VectorAnaliser:
             
             # doc_mean_vector.append(Helper.normalize_vector(windows_total))
             # dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
+            doc_mean_vector = self.new_avf(sentences, most_common_word_freq, suspicious_freq_dist)
             
             #  cu concatenare
-            for window in windows:
-                # windows_total.append(self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist))
-                windows_total.append(self.new_avf(window, most_common_word_freq, suspicious_freq_dist))
+            # TODO: iterate to use sents NOT windows as base.
+            # Windows are only for features, not actual data.
 
-                # windows_total[-1].extend(self.compute_POS(window))
-                # doc_mean_vector.append(Helper.normalize_vector(windows_total[-1]))
-            # pdb.set_trace()
-            # dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
+            # for index, sentence in enumerate(sentences):
+            #     '''
+            #     Window is represented by all k+1 items.
+            #     Until index is equal to k/2, it will jump.
+            #     After, it will pass through until index+k is equal to length.
+            #     '''
+            #     if index-k/2 >=0 and index+k/2<=len(sentences):
+            #         arr_sentences = sentences[index-k/2:index+k/2]
+            #         pdb.set_trace()
+            #         windows_total.append(self.new_avf(arr_sentences, most_common_word_freq, suspicious_freq_dist))
+            # for window in windows:
+            for index, sentence in sentences:
+                if index-k/2 <= 0:
+                    windows_total.append(self.average_word_frequecy_class(flatten(windows[0]), most_common_word_freq, suspicious_freq_dist))
+                elif index+k/2>len(sentences):
+                    windows_total.append(self.average_word_frequecy_class(flatten(windows[len(windows)-1]), most_common_word_freq, suspicious_freq_dist))
+                else:
+                    windows_total.append(self.average_word_frequecy_class(flatten(windows[index]), most_common_word_freq, suspicious_freq_dist))
+
+                
+
+            dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
+            standard_deviation = Helper.stddev(windows_total, dict_cosine_similarity['cosine_array'], dict_cosine_similarity['mean'])
+            for cs in dict_cosine_similarity['cosine_array']:
+                print Helper.trigger_suspect(cs, dict_cosine_similarity['mean'], standard_deviation)
+            pdb.set_trace()
             
 
 

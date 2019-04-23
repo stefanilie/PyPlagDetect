@@ -1,14 +1,15 @@
 import pdb
 import os
 import pickle
-from src.config import SUSPICIOUS, DUMPS
 import numpy as np
-from compiler.ast import flatten
+from math import e, log
 from nltk import word_tokenize
-from sklearn.metrics.pairwise import cosine_similarity
+from compiler.ast import flatten
+from src.config import SUSPICIOUS, DUMPS
 from sklearn.preprocessing import normalize
-from nltk.corpus.reader.tagged import CategorizedTaggedCorpusReader
 from nltk.corpus.util import LazyCorpusLoader
+from sklearn.metrics.pairwise import cosine_similarity
+from nltk.corpus.reader.tagged import CategorizedTaggedCorpusReader
 
 class Helper:
 
@@ -85,7 +86,7 @@ class Helper:
     def get_feature_percentage(relative_to, feature):
         dict_reply = {}
         for key, value in feature.iteritems():
-            dict_reply.update({str(key)+"_percentage": 100*value/float(relative_to)})
+            dict_reply.update({str(key)+"_percentage": np.true_divide(100*value, relative_to)})
         return dict_reply
 
     '''
@@ -98,7 +99,7 @@ class Helper:
     '''
     @staticmethod
     def compute_TF(term, tokenized_document):
-        return 1 + math.log(tokenized_document.count(term))
+        return 1 + log(tokenized_document.count(term))
 
     '''
     Computes the Inverse Term Frequency (IDF) coeficient.
@@ -114,7 +115,7 @@ class Helper:
         for doc in tokenized_document:
             if term in doc:
                 doc_number += 1
-        return math.log(len(tokenized_document/doc_number))
+        return log(len(np.true_divide(tokenized_document, doc_number)))
 
 
     '''
@@ -213,7 +214,6 @@ class Helper:
     
 
     sent_count: number of document sentences.
-    # todo: refactor so that it return a matrix of arrays of cosine similarities that can be reused in sttdev and mean.
 
     '''
     @staticmethod
@@ -224,12 +224,12 @@ class Helper:
         sent_count = len(sent_array)
 
         for sentence in sent_array:
-            cs = cosine_similarity([[sentence]], [document])
+            cs = cosine_similarity(sentence, document)
             cs_sum+=cs
             cosine_array.append(cs)
 
         if len(cosine_array):
-            mean = 1/sent_count * cs_sum
+            mean = np.true_divide(1, sent_count) * cs_sum
             dict_reply['mean'] = mean
             dict_reply['cosine_array'] = cosine_array
         return dict_reply
@@ -251,11 +251,11 @@ class Helper:
     @staticmethod
     def stddev(sent_array, cosine_similarity_array, mean):
         sum=0
-        for sent, index in enumerate(sent_array):
+        for index, sent in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
             # TODO: check to see .sum methid from numpy
             sum += np.square(np.array(cosine_similarity_array[index]) - np.array(mean))
-        return math.sqrt(1/len(sent_array)*sum)
+        return np.sqrt(np.true_divide(1, len(sent_array))*sum)
             
     '''
     Decides if annalized part of the document is plagiarised or not.

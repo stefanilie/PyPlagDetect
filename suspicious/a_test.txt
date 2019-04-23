@@ -3,3 +3,5 @@ I would like to see how tokenizing of the sentences works.
 This shall be the begining of a long journey.
 Hope this works.
 God help me please.
+This has to separate windows accordingly.
+Please do so...
