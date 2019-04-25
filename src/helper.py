@@ -205,26 +205,21 @@ class Helper:
     '''
     Calculates the cosine similarity between the window sentences and mean document
     feature arrays. Uses scikit learn method for this.
-    @param sent_array - [[array]] statistics for all windiws/sentences in the doc
+    @param windows - [[array]] statistics for all windiws/sentences in the doc
     @param document - [[array]] statistics for the whole document
     @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
 
-    TODO: sent_array and Document MUST be matrices
-    TODO: refactor to be same length
     
-
-    sent_count: number of document sentences.
-
     '''
     @staticmethod
-    def compute_cosine_similarity_array(sent_array, document):
+    def compute_cosine_similarity_array(windows, document):
         cs_sum=0
         cosine_array=[]
         dict_reply={}
-        sent_count = len(sent_array)
+        sent_count = len(windows)
 
-        for sentence in sent_array:
-            cs = cosine_similarity(sentence, document)
+        for window in windows:
+            cs = cosine_similarity(window, document)
             cs_sum+=cs
             cosine_array.append(cs)
 
