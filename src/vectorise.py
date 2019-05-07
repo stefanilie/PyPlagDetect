@@ -120,10 +120,17 @@ class VectorAnaliser:
         pcf = Helper.normalize_vector([pcf])
         stp = Helper.normalize_vector([stp])
         
-        toReturn = np.concatenate((awf, pcf))
-        toReturn = np.concatenate((toReturn, stp))
-        return Helper.normalize_vector(toReturn)
-            
+        # Old way of doing things, it adds vectors to an array        
+        # toReturn = np.concatenate((awf, pcf))
+        # toReturn = np.concatenate((toReturn, stp))
+
+        toReturn = awf
+        toReturn.extend(pcf)
+        toReturn.extend(stp)
+        
+        # return np.array(Helper.normalize_vector([toReturn]))
+        return Helper.normalize_vector([toReturn])
+
 
     '''
     Return FreqDist of all POS tokenized sentences.
@@ -221,12 +228,12 @@ class VectorAnaliser:
             #     elif index+k/2>len(sentences):
             #         windows_total.append(self.average_word_frequecy_class(flatten(windows[len(windows)-1]), most_common_word_freq, suspicious_freq_dist))
             #     else:
-            #         windows_total.append(self.average_word_frequecy_class(flatten(windows[index]), most_common_word_freq, suspicious_freq_dist))
-
+            #         windows_total.append(self.average_word_frequecy_class(flatten(windows[index]), most_common_word_freq, suspicious_freq_dist))            
             dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
             standard_deviation = Helper.stddev(windows_total, dict_cosine_similarity['cosine_array'], dict_cosine_similarity['mean'])
             for cs in dict_cosine_similarity['cosine_array']:
                 print Helper.trigger_suspect(cs, dict_cosine_similarity['mean'], standard_deviation)
+            
             pdb.set_trace()
 
 

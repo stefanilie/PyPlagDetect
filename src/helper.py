@@ -2,7 +2,9 @@ import pdb
 import os
 import pickle
 import numpy as np
+from numpy import dot
 from math import e, log
+from numpy.linalg import norm
 from nltk import word_tokenize
 from compiler.ast import flatten
 from src.config import SUSPICIOUS, DUMPS
@@ -219,7 +221,7 @@ class Helper:
         sent_count = len(windows)
 
         for window in windows:
-            cs = cosine_similarity(window, document)
+            cs = dot(window, document)/(norm(window)*norm(document))
             cs_sum+=cs
             cosine_array.append(cs)
 
@@ -233,7 +235,7 @@ class Helper:
     def normalize_vector(vector):
         # pdb.set_trace()
         # return np.linalg.norm(vector)
-        return normalize(vector)
+        return normalize(vector)[0].tolist()
 
 
     '''
@@ -263,4 +265,5 @@ class Helper:
     def trigger_suspect(cosine_similarity_value, mean, stddev):
         return cosine_similarity_value < mean - e*stddev
         
+    
 
