@@ -22,6 +22,9 @@ class VectorAnaliser:
         self.stop_words = stop_words
         self.tokenized = []
         self.suspect_corpus_tokenized = None
+        self.arr_cosine_similarity = {}
+        self.mean = 0.0
+        self.standard_deviation = 0.0
 
     '''
     Tokenizes all corpuses and generates a Frequency Distribution.
@@ -159,6 +162,20 @@ class VectorAnaliser:
         # TODO: see why we don;t detect pronouns and see how can we fix this.
         return toReturn
         
+
+    '''
+    Generates suspect passages array by concatenating all consecutive suspect sentences. 
+    '''
+    def generate_passages(self):
+        arr_suspect_index=[]
+        for index, cs in enumerate(self.arr_cosine_similarity):
+           isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
+           
+           if isSuspect:
+               arr_suspect_index.append(index)
+            arr_suspect_index = Helper.find_consecutive_numbers(arr_suspect_index)
+        return arr_suspect_index
+
     '''
     Main method for vectorising the corpus.
     @param corpus:
@@ -229,10 +246,13 @@ class VectorAnaliser:
             #         windows_total.append(self.average_word_frequecy_class(flatten(windows[len(windows)-1]), most_common_word_freq, suspicious_freq_dist))
             #     else:
             #         windows_total.append(self.average_word_frequecy_class(flatten(windows[index]), most_common_word_freq, suspicious_freq_dist))            
+            
             dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
-            standard_deviation = Helper.stddev(windows_total, dict_cosine_similarity['cosine_array'], dict_cosine_similarity['mean'])
-            for cs in dict_cosine_similarity['cosine_array']:
-                print Helper.trigger_suspect(cs, dict_cosine_similarity['mean'], standard_deviation)
+            self.mean = self.mean
+            self.arr_cosine_similarity = self.arr_cosine_similarity
+            self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
+            for cs in self.arr_cosine_similarity:
+                print Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
             
             pdb.set_trace()
 

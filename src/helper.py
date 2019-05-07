@@ -4,8 +4,10 @@ import pickle
 import numpy as np
 from numpy import dot
 from math import e, log
+from itertools import groupby
 from numpy.linalg import norm
 from nltk import word_tokenize
+from operator import itemgetter
 from compiler.ast import flatten
 from src.config import SUSPICIOUS, DUMPS
 from sklearn.preprocessing import normalize
@@ -205,6 +207,17 @@ class Helper:
         return tokenized_dump
 
     '''
+    Finds all consecutive items in array.
+    Returns grouped consecutive items.
+    '''
+    @staticmethod
+    def find_consecutive_numbers(arr):
+        toReturn = []
+        for k, g in groupby(enumerate(arr), lambda (i, x): i-x):
+            toReturn.append(map(itemgetter(1), g))
+        return toReturn
+
+    '''
     Calculates the cosine similarity between the window sentences and mean document
     feature arrays. Uses scikit learn method for this.
     @param windows - [[array]] statistics for all windiws/sentences in the doc
@@ -265,5 +278,7 @@ class Helper:
     def trigger_suspect(cosine_similarity_value, mean, stddev):
         return cosine_similarity_value < mean - e*stddev
         
-    
-
+    @staticmethod
+    def precision(arr_plag_window):
+        sum=0
+        for window in arr_plag_window:
