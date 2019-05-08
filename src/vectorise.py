@@ -3,7 +3,9 @@ import pickle
 import string
 import numpy as np
 from math import log
+from numpy import dot
 from helper import Helper
+from numpy.linalg import norm
 from collections import Counter
 from compiler.ast import flatten
 from nltk.probability import FreqDist
@@ -107,8 +109,11 @@ class VectorAnaliser:
         for item in suspicious_freq_dist:
             isInWindow = True if item in words else False
             if isInWindow: 
-                word_freq = 1 if not suspicious_freq_dist[item] else suspicious_freq_dist[item]
-                awf.append(log(float(most_common_word_freq)/word_freq)/log(2))         
+                # TODO: see why we needed the below comented line
+                word_freq = suspicious_freq_dist[item]
+                # word_freq = 1 if not suspicious_freq_dist[item] else suspicious_freq_dist[item]
+
+                awf.append(log(float(most_common_word_freq)/word_freq) / log(2) )         
                 pcf.append(fdist[item] if item in string.punctuation else 0)
                 stp.append(fdist[item] if item in self.stop_words else 0)
                 # TODO: check if iterating sentences we have issues with 
@@ -161,6 +166,29 @@ class VectorAnaliser:
         # TODO: remove None posibility for the below FreqDist
         # TODO: see why we don;t detect pronouns and see how can we fix this.
         return toReturn
+
+        '''
+   
+    Calculates the cosine similarity between the window sentences and mean document
+    feature arrays. Uses scikit learn method for this.
+    @param windows - [[array]] statistics for all windiws/sentences in the doc
+    @param document - [[array]] statistics for the whole document
+    @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
+    '''
+    def compute_cosine_similarity_array(self, windows, document):
+        cs_sum=0
+        cosine_array=[]
+        sent_count = len(windows)
+
+        for window in windows:
+            cs = dot(window, document)/(norm(window)*norm(document))
+            cs_sum+=cs
+            cosine_array.append(cs)
+
+        if len(cosine_array):
+            mean = np.true_divide(1, sent_count) * cs_sum
+            self.mean = mean
+            self.arr_cosine_similarity = cosine_array
         
 
     '''
@@ -170,10 +198,10 @@ class VectorAnaliser:
         arr_suspect_index=[]
         for index, cs in enumerate(self.arr_cosine_similarity):
            isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
-           
            if isSuspect:
                arr_suspect_index.append(index)
-            arr_suspect_index = Helper.find_consecutive_numbers(arr_suspect_index)
+        
+        arr_suspect_index = Helper.find_consecutive_numbers(arr_suspect_index)
         return arr_suspect_index
 
     '''
@@ -193,7 +221,9 @@ class VectorAnaliser:
         # Tokenizing suspicious corpus and getting most common from HUGE corpus.
         files = corpus.fileids()
         self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
-        suspicious_freq_dist = FreqDist(self.suspect_corpus_tokenized)
+
+        # # TODO: changing this to point to current file, not whole corpus.
+        # suspicious_freq_dist = FreqDist(self.suspect_corpus_tokenized)
         most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
 
         # temporary value for k.
@@ -202,6 +232,8 @@ class VectorAnaliser:
         for file_item in files:
             windows_total = []
             doc_mean_vector = []
+
+            suspicious_freq_dist = Helper.tokenize_file(corpus, self.stop_words, file_item, True)
 
             # TODO: replace with nltk.sent_tokenizer
             sentences = corpus.sents(fileids=file_item)
@@ -247,9 +279,9 @@ class VectorAnaliser:
             #     else:
             #         windows_total.append(self.average_word_frequecy_class(flatten(windows[index]), most_common_word_freq, suspicious_freq_dist))            
             
-            dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
-            self.mean = self.mean
-            self.arr_cosine_similarity = self.arr_cosine_similarity
+            self.compute_cosine_similarity_array(windows_total, doc_mean_vector)
+            # self.mean = self.mean
+            # self.arr_cosine_similarity = self.arr_cosine_similarity
             self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
             for cs in self.arr_cosine_similarity:
                 print Helper.trigger_suspect(cs, self.mean, self.standard_deviation)

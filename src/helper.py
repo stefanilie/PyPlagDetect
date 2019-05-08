@@ -9,6 +9,7 @@ from numpy.linalg import norm
 from nltk import word_tokenize
 from operator import itemgetter
 from compiler.ast import flatten
+from nltk.probability import FreqDist
 from src.config import SUSPICIOUS, DUMPS
 from sklearn.preprocessing import normalize
 from nltk.corpus.util import LazyCorpusLoader
@@ -165,6 +166,16 @@ class Helper:
             tokenized = Helper.get_difference(tokenized, stopWords)
         return tokenized
 
+    '''
+    Returns FreqDist of the tokenized suspect file.
+    '''
+    @staticmethod
+    def tokenize_file(corpus, stopWords, fileId, with_stop_words=False):
+        raw = corpus.raw(fileId)
+        tokenized = word_tokenize(raw)
+        if not with_stop_words:
+            tokenized = Helper.get_difference(tokenized, stopWords)
+        return FreqDist(tokenized)
 
     '''
     Creates data dump for tokenization to destination file.
@@ -217,39 +228,12 @@ class Helper:
             toReturn.append(map(itemgetter(1), g))
         return toReturn
 
-    '''
-    Calculates the cosine similarity between the window sentences and mean document
-    feature arrays. Uses scikit learn method for this.
-    @param windows - [[array]] statistics for all windiws/sentences in the doc
-    @param document - [[array]] statistics for the whole document
-    @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
-
-    
-    '''
-    @staticmethod
-    def compute_cosine_similarity_array(windows, document):
-        cs_sum=0
-        cosine_array=[]
-        dict_reply={}
-        sent_count = len(windows)
-
-        for window in windows:
-            cs = dot(window, document)/(norm(window)*norm(document))
-            cs_sum+=cs
-            cosine_array.append(cs)
-
-        if len(cosine_array):
-            mean = np.true_divide(1, sent_count) * cs_sum
-            dict_reply['mean'] = mean
-            dict_reply['cosine_array'] = cosine_array
-        return dict_reply
 
     @staticmethod
     def normalize_vector(vector):
         # pdb.set_trace()
         # return np.linalg.norm(vector)
         return normalize(vector)[0].tolist()
-
 
     '''
     Computes standard deviation for the provided sentences array.
@@ -278,7 +262,7 @@ class Helper:
     def trigger_suspect(cosine_similarity_value, mean, stddev):
         return cosine_similarity_value < mean - e*stddev
         
-    @staticmethod
-    def precision(arr_plag_window):
-        sum=0
-        for window in arr_plag_window:
+    # @staticmethod
+    # def precision(arr_plag_window):
+    #     sum=0
+    #     for window in arr_plag_window:
