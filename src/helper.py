@@ -63,23 +63,55 @@ class Helper:
 
         return list(set(list1).difference(set(list2)))
 
+    '''
+    Maps each POS to a number so that we can analyze the text.
+    '''
     @staticmethod
     def switch_pos(x):
         return {
-            'NN': 1, #noun
-            'NNS': 2, #noun plural
-            'NP': 3, # proper noun
-            'NPS': 4, #proper noun plural
-            'PP': 5, #personal pronoun
-            'PP$': 6, #possesive pronoun
-            'RB': 7, #adverb
-            'RBR': 8, #adverb comparative
-            'RBS': 9, #adverb superlative
-            'VB': 10, #verb
-            'CC': 11, #coordinating conjunction
-            'CD': 12, #cardinal number
-            'DT': 13, #determiner
-            'IN': 14, #preposition
+            'NN': 1.0, #noun
+            'NNS': 1.5, #noun plural
+            'NNP': 2.0, # proper noun
+            'NPS': 2.5, #proper noun plural
+            'PRP': 3.0, #personal pronoun
+            'PP$': 3.5, #possesive pronoun
+            'RB': 4.0, #adverb
+            'RBR': 4.3, #adverb comparative
+            'RBS': 4.9, #adverb superlative
+            'VB': 5.0, #verb be, base form
+            'VBD': 5.2, #verb be, past tense
+            'VBG': 5.4, #verb be gerund
+            'VBN': 5.6, #verb be past participle
+            'VBP': 5.8, #verb be present 3rd
+            'VBZ': 5.99, #verb be 3rd sing. pres.
+            'VH': 6.0, #verb have, base form 
+            'VHD': 6.2, #verb have, past
+            'VHG': 6.4, #verb have, gerund
+            'VHN': 6.6, #verb have, past participle
+            'VHP': 6.8, #verb have, sing, pressend, non3rd
+            'VHZ': 6.99, #verb have, 3rd pers. sing, presens
+            'VV': 7.0, #verb base form
+            'VVD': 7.2, #verb past tense
+            'VVG': 7.4, #verb gerund/past participle
+            'VVN': 7.6, #verb past participle
+            'VVP': 7.8, #verb sing. present non3rd
+            'VVZ': 7.99, #verb 3rd person sing
+            'CC': 8.0, #coordinating conjunction
+            'CD': 9.0, #cardinal number
+            'DT': 10.0, #determiner
+            'IN': 11.0, #preposition
+            'WDT': 12.0, #wh-determiner
+            'WP': 12.2, #pwh pronoun
+            'WP$': 12.4, #possesive wh-pronoun
+            'WRB': 12.6, #wh-adverb
+            'JJ': 13.0, #adjective
+            'JJR': 13.4, #adjective, comparative
+            'JJS': 13.8, #adjective, superlative
+            'MD': 14.0, #modal
+            'POS': 15.0, #possesive ending
+            # 'SENT': 16.0, #sencencebreak (pct)
+            # 'SYM': 16.0, #symbols
+            'TO': 17.0
         }.get(x, 0)
 
     '''

@@ -101,15 +101,14 @@ class VectorAnaliser:
         awf=[]
         pcf=[]
         stp = []
-        prn = []
-        arr_tagged_sents=[]
-        
 
         words = flatten(sentences)
+        # tag the sentences
         fdist = FreqDist(words)
         for item in suspicious_freq_dist:
             isInWindow = True if item in words else False
             if isInWindow: 
+                # pos.append tagged value, else 0
                 # TODO: see why we needed the below comented line
                 word_freq = suspicious_freq_dist[item]
                 # word_freq = 1 if not suspicious_freq_dist[item] else suspicious_freq_dist[item]
@@ -147,32 +146,21 @@ class VectorAnaliser:
     def compute_POS(self, sentences, suspicious_freq_dist):
         toReturn=[]
         arr_tagged_sents=[]
-        pronouns = []
-        arr_stop_words = []
-        words_freq_dist = FreqDist(flatten(sentences))
         for sentence in sentences:
+            # TODO: change to use this instead of default pos_tag
             # tagged_sent = self.tagger.tag(sentence)
             tagged_sent = pos_tag(sentence)
             tagged_sent = self.create_pos_vector(tagged_sent)
-            pdb.set_trace()
+            
+            # write a switch for pronouns also
+            arr_tagged_sents.extend(tagged_sent)
 
-        #     for word, tag in tagged_sent:
-        #         if word in self.stop_words:
-        #             arr_stop_words.append(words_freq_dist[word])
-        #         if tag == 'PRP':
-        #             pronouns.append(words_freq_dist[word])
-        #     arr_tagged_sents.extend(tagged_sent)
-
-        # toReturn.append(Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values()))
-        # Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values())
-        # toReturn.append(Helper.normalize_vector(pronouns))
-        # toReturn.append(Helper.normalize_vector(arr_stop_words))
-
-        # TODO: remove None posibility for the below FreqDist
-        # TODO: see why we don;t detect pronouns and see how can we fix this.
+        toReturn = Helper.normalize_vector([arr_tagged_sents])
         return toReturn
 
-
+    '''
+    Iterates sentence and passes through filter each POS.
+    '''
     def create_pos_vector(self, tagged_sent):
         arr_pos=[]
         for (word, pos) in tagged_sent:
@@ -252,6 +240,8 @@ class VectorAnaliser:
             windows = self.sliding_window(sentences, k)
             
             doc_mean_vector = self.new_avf(sentences, most_common_word_freq, suspicious_freq_dist)
+            doc_mean_vector.extend(self.compute_POS(sentences, suspicious_freq_dist))
+            doc_mean_vector = Helper.normalize_vector([doc_mean_vector])
             
             for index, sentence in enumerate(sentences):
                 '''
@@ -267,8 +257,13 @@ class VectorAnaliser:
                 else:
                     arr_sentences = sentences[index-k/2:index+k/2]                    
                
-                self.compute_POS(arr_sentences, suspicious_freq_dist)
-                windows_total.append(self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist))
+                toAppend = self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist)
+                toAppend.extend(self.compute_POS(arr_sentences, suspicious_freq_dist))
+                pdb.set_trace()
+                windows_total.append(Helper.normalize_vector([toAppend]))
+
+                # windows_total.append(self.compute_POS(arr_sentences, suspicious_freq_dist))
+                # windows_total.append(self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist))
 
             # TODO: old way of generating the window.
             # Still works but can't iterate bearing in mind sentences.
