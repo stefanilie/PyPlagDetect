@@ -4,6 +4,7 @@ import string
 import numpy as np
 from math import log
 from numpy import dot
+from nltk import pos_tag
 from helper import Helper
 from numpy.linalg import norm
 from collections import Counter
@@ -143,32 +144,43 @@ class VectorAnaliser:
     '''
     Return FreqDist of all POS tokenized sentences.
     '''
-    def compute_POS(self, sentences):
+    def compute_POS(self, sentences, suspicious_freq_dist):
         toReturn=[]
         arr_tagged_sents=[]
         pronouns = []
         arr_stop_words = []
         words_freq_dist = FreqDist(flatten(sentences))
         for sentence in sentences:
-            tagged_sent = self.tagger.tag(sentence)
-            for word, tag in tagged_sent:
-                if word in self.stop_words:
-                    arr_stop_words.append(words_freq_dist[word])
-                if tag == 'PRP':
-                    pronouns.append(words_freq_dist[word])
-            arr_tagged_sents.extend(tagged_sent)
+            # tagged_sent = self.tagger.tag(sentence)
+            tagged_sent = pos_tag(sentence)
+            tagged_sent = self.create_pos_vector(tagged_sent)
+            pdb.set_trace()
 
-        toReturn.append(Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values()))
-        Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values())
-        toReturn.append(Helper.normalize_vector(pronouns))
-        toReturn.append(Helper.normalize_vector(arr_stop_words))
+        #     for word, tag in tagged_sent:
+        #         if word in self.stop_words:
+        #             arr_stop_words.append(words_freq_dist[word])
+        #         if tag == 'PRP':
+        #             pronouns.append(words_freq_dist[word])
+        #     arr_tagged_sents.extend(tagged_sent)
+
+        # toReturn.append(Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values()))
+        # Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values())
+        # toReturn.append(Helper.normalize_vector(pronouns))
+        # toReturn.append(Helper.normalize_vector(arr_stop_words))
 
         # TODO: remove None posibility for the below FreqDist
         # TODO: see why we don;t detect pronouns and see how can we fix this.
         return toReturn
 
-        '''
-   
+
+    def create_pos_vector(self, tagged_sent):
+        arr_pos=[]
+        for (word, pos) in tagged_sent:
+            arr_pos.append(Helper.switch_pos(pos))
+        return arr_pos
+
+
+    '''
     Calculates the cosine similarity between the window sentences and mean document
     feature arrays. Uses scikit learn method for this.
     @param windows - [[array]] statistics for all windiws/sentences in the doc
@@ -254,7 +266,8 @@ class VectorAnaliser:
                     arr_sentences = sentences[len(sentences)-k:len(sentences)]
                 else:
                     arr_sentences = sentences[index-k/2:index+k/2]                    
-
+               
+                self.compute_POS(arr_sentences, suspicious_freq_dist)
                 windows_total.append(self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist))
 
             # TODO: old way of generating the window.

@@ -63,6 +63,25 @@ class Helper:
 
         return list(set(list1).difference(set(list2)))
 
+    @staticmethod
+    def switch_pos(x):
+        return {
+            'NN': 1, #noun
+            'NNS': 2, #noun plural
+            'NP': 3, # proper noun
+            'NPS': 4, #proper noun plural
+            'PP': 5, #personal pronoun
+            'PP$': 6, #possesive pronoun
+            'RB': 7, #adverb
+            'RBR': 8, #adverb comparative
+            'RBS': 9, #adverb superlative
+            'VB': 10, #verb
+            'CC': 11, #coordinating conjunction
+            'CD': 12, #cardinal number
+            'DT': 13, #determiner
+            'IN': 14, #preposition
+        }.get(x, 0)
+
     '''
     Method obtained from
     https://github.com/ypeels/nltk-book/blob/master/exercises/2.21-syllable-count.py
