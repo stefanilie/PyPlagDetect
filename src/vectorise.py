@@ -101,9 +101,11 @@ class VectorAnaliser:
         awf=[]
         pcf=[]
         stp = []
+        pos = []
+        prn = []
 
         words = flatten(sentences)
-        # tag the sentences
+        pos_tagged_sentences = self.compute_POS(sentences)
         fdist = FreqDist(words)
         for item in suspicious_freq_dist:
             isInWindow = True if item in words else False
@@ -116,6 +118,11 @@ class VectorAnaliser:
                 awf.append(log(float(most_common_word_freq)/word_freq) / log(2) )         
                 pcf.append(fdist[item] if item in string.punctuation else 0)
                 stp.append(fdist[item] if item in self.stop_words else 0)
+                pos.append(pos_tagged_sentences[item])
+                if pos_tagged_sentences[item] == 3.0 or pos_tagged_sentences[item] == 3.5:
+                    prn.append(1)
+                else:
+                    prn.append(0)
                 # TODO: check if iterating sentences we have issues with 
                 # double values due to iterating also though docFreqDist
                 # prn.append(fdist[item] if tag == 'PRP' else 0)
@@ -123,10 +130,15 @@ class VectorAnaliser:
                 awf.append(0)
                 pcf.append(0)
                 stp.append(0)
+                pos.append(0)
+                prn.append(0)
         
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
         stp = Helper.normalize_vector([stp])
+        pos = Helper.normalize_vector([pos])
+        prn = Helper.normalize_vector([prn])
+
         
         # Old way of doing things, it adds vectors to an array        
         # toReturn = np.concatenate((awf, pcf))
@@ -135,37 +147,37 @@ class VectorAnaliser:
         toReturn = awf
         toReturn.extend(pcf)
         toReturn.extend(stp)
-        
+        toReturn.extend(pos)
+        toReturn.extend(prn)
         # return np.array(Helper.normalize_vector([toReturn]))
         return Helper.normalize_vector([toReturn])
 
 
     '''
-    Return FreqDist of all POS tokenized sentences.
+    Return Dictionary with pos tokenized sentences values.
     '''
-    def compute_POS(self, sentences, suspicious_freq_dist):
-        toReturn=[]
-        arr_tagged_sents=[]
+    def compute_POS(self, sentences):
+        dict_pos={}
         for sentence in sentences:
             # TODO: change to use this instead of default pos_tag
             # tagged_sent = self.tagger.tag(sentence)
-            tagged_sent = pos_tag(sentence)
-            tagged_sent = self.create_pos_vector(tagged_sent)
+            tagged_sents = pos_tag(sentence)
+            tagged_sents = self.create_pos_dict(tagged_sents)
             
-            # write a switch for pronouns also
-            arr_tagged_sents.extend(tagged_sent)
+            # write a switch for pronouns also that returns 1 for each occurance.
+            dict_pos.update(tagged_sents)
 
-        toReturn = Helper.normalize_vector([arr_tagged_sents])
-        return toReturn
+        return dict_pos
 
     '''
     Iterates sentence and passes through filter each POS.
+    Returns dictionary containing {word: pos}
     '''
-    def create_pos_vector(self, tagged_sent):
-        arr_pos=[]
+    def create_pos_dict(self, tagged_sent):
+        dict_pos={}
         for (word, pos) in tagged_sent:
-            arr_pos.append(Helper.switch_pos(pos))
-        return arr_pos
+            dict_pos[word] = Helper.switch_pos(pos)
+        return dict_pos
 
 
     '''
@@ -240,7 +252,6 @@ class VectorAnaliser:
             windows = self.sliding_window(sentences, k)
             
             doc_mean_vector = self.new_avf(sentences, most_common_word_freq, suspicious_freq_dist)
-            doc_mean_vector.extend(self.compute_POS(sentences, suspicious_freq_dist))
             doc_mean_vector = Helper.normalize_vector([doc_mean_vector])
             
             for index, sentence in enumerate(sentences):
@@ -256,10 +267,9 @@ class VectorAnaliser:
                     arr_sentences = sentences[len(sentences)-k:len(sentences)]
                 else:
                     arr_sentences = sentences[index-k/2:index+k/2]                    
-               
-                toAppend = self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist)
-                toAppend.extend(self.compute_POS(arr_sentences, suspicious_freq_dist))
-                pdb.set_trace()
+
+                toAppend = self.new_avf(arr_sentences, most_common_word_freq, suspicious_freq_dist)
+                # toAppend.extend(self.compute_POS(arr_sentences, suspicious_freq_dist))
                 windows_total.append(Helper.normalize_vector([toAppend]))
 
                 # windows_total.append(self.compute_POS(arr_sentences, suspicious_freq_dist))
