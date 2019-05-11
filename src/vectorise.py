@@ -301,9 +301,16 @@ class VectorAnaliser:
             # self.mean = self.mean
             # self.arr_cosine_similarity = self.arr_cosine_similarity
             self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
-            for cs in self.arr_cosine_similarity:
-                print Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
+            suspect_sentences = []
+            dict_suspect_char_count = {}
+            for index, cs in enumerate(self.arr_cosine_similarity):
+                isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
+                suspect_sentences.append(index) if isSuspect else False
+                # compute number of chars in one suspect sentece
+                dict_suspect_char_count.update({index: sum(map(len, sentences[index]))})
             
+            arr_suspect_chunks = Helper.find_consecutive_numbers(suspect_sentences)
+            # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
             pdb.set_trace()
 
 

@@ -314,6 +314,9 @@ class Helper:
         return cosine_similarity_value < mean - e*stddev
         
     # @staticmethod
-    # def precision(arr_plag_window):
+    # def precision(arr_detected_passages, arr_detected_char_count):
     #     sum=0
-    #     for window in arr_plag_window:
+    #     S = len(arr_passages) #number of passages
+    #     for pasage in arr_passages:
+            
+            
