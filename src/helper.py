@@ -2,9 +2,14 @@ import pdb
 import os
 import pickle
 import numpy as np
+from numpy import dot
 from math import e, log
+from itertools import groupby
+from numpy.linalg import norm
 from nltk import word_tokenize
+from operator import itemgetter
 from compiler.ast import flatten
+from nltk.probability import FreqDist
 from src.config import SUSPICIOUS, DUMPS
 from sklearn.preprocessing import normalize
 from nltk.corpus.util import LazyCorpusLoader
@@ -57,6 +62,57 @@ class Helper:
         list2 = flatten(list2)
 
         return list(set(list1).difference(set(list2)))
+
+    '''
+    Maps each POS to a number so that we can analyze the text.
+    '''
+    @staticmethod
+    def switch_pos(x):
+        return {
+            'NN': 1.0, #noun
+            'NNS': 1.5, #noun plural
+            'NNP': 2.0, # proper noun
+            'NPS': 2.5, #proper noun plural
+            'PRP': 3.0, #personal pronoun
+            'PP$': 3.5, #possesive pronoun
+            'RB': 4.0, #adverb
+            'RBR': 4.3, #adverb comparative
+            'RBS': 4.9, #adverb superlative
+            'VB': 5.0, #verb be, base form
+            'VBD': 5.2, #verb be, past tense
+            'VBG': 5.4, #verb be gerund
+            'VBN': 5.6, #verb be past participle
+            'VBP': 5.8, #verb be present 3rd
+            'VBZ': 5.99, #verb be 3rd sing. pres.
+            'VH': 6.0, #verb have, base form 
+            'VHD': 6.2, #verb have, past
+            'VHG': 6.4, #verb have, gerund
+            'VHN': 6.6, #verb have, past participle
+            'VHP': 6.8, #verb have, sing, pressend, non3rd
+            'VHZ': 6.99, #verb have, 3rd pers. sing, presens
+            'VV': 7.0, #verb base form
+            'VVD': 7.2, #verb past tense
+            'VVG': 7.4, #verb gerund/past participle
+            'VVN': 7.6, #verb past participle
+            'VVP': 7.8, #verb sing. present non3rd
+            'VVZ': 7.99, #verb 3rd person sing
+            'CC': 8.0, #coordinating conjunction
+            'CD': 9.0, #cardinal number
+            'DT': 10.0, #determiner
+            'IN': 11.0, #preposition
+            'WDT': 12.0, #wh-determiner
+            'WP': 12.2, #pwh pronoun
+            'WP$': 12.4, #possesive wh-pronoun
+            'WRB': 12.6, #wh-adverb
+            'JJ': 13.0, #adjective
+            'JJR': 13.4, #adjective, comparative
+            'JJS': 13.8, #adjective, superlative
+            'MD': 14.0, #modal
+            'POS': 15.0, #possesive ending
+            # 'SENT': 16.0, #sencencebreak (pct)
+            # 'SYM': 16.0, #symbols
+            'TO': 17.0
+        }.get(x, 0)
 
     '''
     Method obtained from
@@ -161,6 +217,16 @@ class Helper:
             tokenized = Helper.get_difference(tokenized, stopWords)
         return tokenized
 
+    '''
+    Returns FreqDist of the tokenized suspect file.
+    '''
+    @staticmethod
+    def tokenize_file(corpus, stopWords, fileId, with_stop_words=False):
+        raw = corpus.raw(fileId)
+        tokenized = word_tokenize(raw)
+        if not with_stop_words:
+            tokenized = Helper.get_difference(tokenized, stopWords)
+        return FreqDist(tokenized)
 
     '''
     Creates data dump for tokenization to destination file.
@@ -203,38 +269,22 @@ class Helper:
         return tokenized_dump
 
     '''
-    Calculates the cosine similarity between the window sentences and mean document
-    feature arrays. Uses scikit learn method for this.
-    @param windows - [[array]] statistics for all windiws/sentences in the doc
-    @param document - [[array]] statistics for the whole document
-    @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
-
-    
+    Finds all consecutive items in array.
+    Returns grouped consecutive items.
     '''
     @staticmethod
-    def compute_cosine_similarity_array(windows, document):
-        cs_sum=0
-        cosine_array=[]
-        dict_reply={}
-        sent_count = len(windows)
+    def find_consecutive_numbers(arr):
+        toReturn = []
+        for k, g in groupby(enumerate(arr), lambda (i, x): i-x):
+            toReturn.append(map(itemgetter(1), g))
+        return toReturn
 
-        for window in windows:
-            cs = cosine_similarity(window, document)
-            cs_sum+=cs
-            cosine_array.append(cs)
-
-        if len(cosine_array):
-            mean = np.true_divide(1, sent_count) * cs_sum
-            dict_reply['mean'] = mean
-            dict_reply['cosine_array'] = cosine_array
-        return dict_reply
 
     @staticmethod
     def normalize_vector(vector):
         # pdb.set_trace()
         # return np.linalg.norm(vector)
-        return normalize(vector)
-
+        return normalize(vector)[0].tolist()
 
     '''
     Computes standard deviation for the provided sentences array.
@@ -263,4 +313,10 @@ class Helper:
     def trigger_suspect(cosine_similarity_value, mean, stddev):
         return cosine_similarity_value < mean - e*stddev
         
-
+    # @staticmethod
+    # def precision(arr_detected_passages, arr_detected_char_count):
+    #     sum=0
+    #     S = len(arr_passages) #number of passages
+    #     for pasage in arr_passages:
+            
+            

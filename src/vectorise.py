@@ -3,7 +3,10 @@ import pickle
 import string
 import numpy as np
 from math import log
+from numpy import dot
+from nltk import pos_tag
 from helper import Helper
+from numpy.linalg import norm
 from collections import Counter
 from compiler.ast import flatten
 from nltk.probability import FreqDist
@@ -22,6 +25,9 @@ class VectorAnaliser:
         self.stop_words = stop_words
         self.tokenized = []
         self.suspect_corpus_tokenized = None
+        self.arr_cosine_similarity = {}
+        self.mean = 0.0
+        self.standard_deviation = 0.0
 
     '''
     Tokenizes all corpuses and generates a Frequency Distribution.
@@ -95,19 +101,28 @@ class VectorAnaliser:
         awf=[]
         pcf=[]
         stp = []
+        pos = []
         prn = []
-        arr_tagged_sents=[]
-        
 
         words = flatten(sentences)
+        pos_tagged_sentences = self.compute_POS(sentences)
         fdist = FreqDist(words)
         for item in suspicious_freq_dist:
             isInWindow = True if item in words else False
             if isInWindow: 
-                word_freq = 1 if not suspicious_freq_dist[item] else suspicious_freq_dist[item]
-                awf.append(log(float(most_common_word_freq)/word_freq)/log(2))         
+                # pos.append tagged value, else 0
+                # TODO: see why we needed the below comented line
+                word_freq = suspicious_freq_dist[item]
+                # word_freq = 1 if not suspicious_freq_dist[item] else suspicious_freq_dist[item]
+
+                awf.append(log(float(most_common_word_freq)/word_freq) / log(2) )         
                 pcf.append(fdist[item] if item in string.punctuation else 0)
                 stp.append(fdist[item] if item in self.stop_words else 0)
+                pos.append(pos_tagged_sentences[item])
+                if pos_tagged_sentences[item] == 3.0 or pos_tagged_sentences[item] == 3.5:
+                    prn.append(1)
+                else:
+                    prn.append(0)
                 # TODO: check if iterating sentences we have issues with 
                 # double values due to iterating also though docFreqDist
                 # prn.append(fdist[item] if tag == 'PRP' else 0)
@@ -115,43 +130,92 @@ class VectorAnaliser:
                 awf.append(0)
                 pcf.append(0)
                 stp.append(0)
+                pos.append(0)
+                prn.append(0)
         
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
         stp = Helper.normalize_vector([stp])
+        pos = Helper.normalize_vector([pos])
+        prn = Helper.normalize_vector([prn])
+
         
-        toReturn = np.concatenate((awf, pcf))
-        toReturn = np.concatenate((toReturn, stp))
-        return Helper.normalize_vector(toReturn)
-            
+        # Old way of doing things, it adds vectors to an array        
+        # toReturn = np.concatenate((awf, pcf))
+        # toReturn = np.concatenate((toReturn, stp))
+
+        toReturn = awf
+        toReturn.extend(pcf)
+        toReturn.extend(stp)
+        toReturn.extend(pos)
+        toReturn.extend(prn)
+        # return np.array(Helper.normalize_vector([toReturn]))
+        return Helper.normalize_vector([toReturn])
+
 
     '''
-    Return FreqDist of all POS tokenized sentences.
+    Return Dictionary with pos tokenized sentences values.
     '''
     def compute_POS(self, sentences):
-        toReturn=[]
-        arr_tagged_sents=[]
-        pronouns = []
-        arr_stop_words = []
-        words_freq_dist = FreqDist(flatten(sentences))
+        dict_pos={}
         for sentence in sentences:
-            tagged_sent = self.tagger.tag(sentence)
-            for word, tag in tagged_sent:
-                if word in self.stop_words:
-                    arr_stop_words.append(words_freq_dist[word])
-                if tag == 'PRP':
-                    pronouns.append(words_freq_dist[word])
-            arr_tagged_sents.extend(tagged_sent)
+            # TODO: change to use this instead of default pos_tag
+            # tagged_sent = self.tagger.tag(sentence)
+            tagged_sents = pos_tag(sentence)
+            tagged_sents = self.create_pos_dict(tagged_sents)
+            
+            # write a switch for pronouns also that returns 1 for each occurance.
+            dict_pos.update(tagged_sents)
 
-        toReturn.append(Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values()))
-        Helper.normalize_vector(FreqDist(flatten(arr_tagged_sents)).values())
-        toReturn.append(Helper.normalize_vector(pronouns))
-        toReturn.append(Helper.normalize_vector(arr_stop_words))
+        return dict_pos
 
-        # TODO: remove None posibility for the below FreqDist
-        # TODO: see why we don;t detect pronouns and see how can we fix this.
-        return toReturn
+    '''
+    Iterates sentence and passes through filter each POS.
+    Returns dictionary containing {word: pos}
+    '''
+    def create_pos_dict(self, tagged_sent):
+        dict_pos={}
+        for (word, pos) in tagged_sent:
+            dict_pos[word] = Helper.switch_pos(pos)
+        return dict_pos
+
+
+    '''
+    Calculates the cosine similarity between the window sentences and mean document
+    feature arrays. Uses scikit learn method for this.
+    @param windows - [[array]] statistics for all windiws/sentences in the doc
+    @param document - [[array]] statistics for the whole document
+    @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
+    '''
+    def compute_cosine_similarity_array(self, windows, document):
+        cs_sum=0
+        cosine_array=[]
+        sent_count = len(windows)
+
+        for window in windows:
+            cs = dot(window, document)/(norm(window)*norm(document))
+            cs_sum+=cs
+            cosine_array.append(cs)
+
+        if len(cosine_array):
+            mean = np.true_divide(1, sent_count) * cs_sum
+            self.mean = mean
+            self.arr_cosine_similarity = cosine_array
         
+
+    '''
+    Generates suspect passages array by concatenating all consecutive suspect sentences. 
+    '''
+    def generate_passages(self):
+        arr_suspect_index=[]
+        for index, cs in enumerate(self.arr_cosine_similarity):
+           isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
+           if isSuspect:
+               arr_suspect_index.append(index)
+        
+        arr_suspect_index = Helper.find_consecutive_numbers(arr_suspect_index)
+        return arr_suspect_index
+
     '''
     Main method for vectorising the corpus.
     @param corpus:
@@ -169,7 +233,9 @@ class VectorAnaliser:
         # Tokenizing suspicious corpus and getting most common from HUGE corpus.
         files = corpus.fileids()
         self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
-        suspicious_freq_dist = FreqDist(self.suspect_corpus_tokenized)
+
+        # # TODO: changing this to point to current file, not whole corpus.
+        # suspicious_freq_dist = FreqDist(self.suspect_corpus_tokenized)
         most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
 
         # temporary value for k.
@@ -179,11 +245,14 @@ class VectorAnaliser:
             windows_total = []
             doc_mean_vector = []
 
+            suspicious_freq_dist = Helper.tokenize_file(corpus, self.stop_words, file_item, True)
+
             # TODO: replace with nltk.sent_tokenizer
             sentences = corpus.sents(fileids=file_item)
             windows = self.sliding_window(sentences, k)
             
             doc_mean_vector = self.new_avf(sentences, most_common_word_freq, suspicious_freq_dist)
+            doc_mean_vector = Helper.normalize_vector([doc_mean_vector])
             
             for index, sentence in enumerate(sentences):
                 '''
@@ -199,7 +268,12 @@ class VectorAnaliser:
                 else:
                     arr_sentences = sentences[index-k/2:index+k/2]                    
 
-                windows_total.append(self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist))
+                toAppend = self.new_avf(arr_sentences, most_common_word_freq, suspicious_freq_dist)
+                # toAppend.extend(self.compute_POS(arr_sentences, suspicious_freq_dist))
+                windows_total.append(Helper.normalize_vector([toAppend]))
+
+                # windows_total.append(self.compute_POS(arr_sentences, suspicious_freq_dist))
+                # windows_total.append(self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist))
 
             # TODO: old way of generating the window.
             # Still works but can't iterate bearing in mind sentences.
@@ -221,12 +295,22 @@ class VectorAnaliser:
             #     elif index+k/2>len(sentences):
             #         windows_total.append(self.average_word_frequecy_class(flatten(windows[len(windows)-1]), most_common_word_freq, suspicious_freq_dist))
             #     else:
-            #         windows_total.append(self.average_word_frequecy_class(flatten(windows[index]), most_common_word_freq, suspicious_freq_dist))
-
-            dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
-            standard_deviation = Helper.stddev(windows_total, dict_cosine_similarity['cosine_array'], dict_cosine_similarity['mean'])
-            for cs in dict_cosine_similarity['cosine_array']:
-                print Helper.trigger_suspect(cs, dict_cosine_similarity['mean'], standard_deviation)
+            #         windows_total.append(self.average_word_frequecy_class(flatten(windows[index]), most_common_word_freq, suspicious_freq_dist))            
+            
+            self.compute_cosine_similarity_array(windows_total, doc_mean_vector)
+            # self.mean = self.mean
+            # self.arr_cosine_similarity = self.arr_cosine_similarity
+            self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
+            suspect_sentences = []
+            dict_suspect_char_count = {}
+            for index, cs in enumerate(self.arr_cosine_similarity):
+                isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
+                suspect_sentences.append(index) if isSuspect else False
+                # compute number of chars in one suspect sentece
+                dict_suspect_char_count.update({index: sum(map(len, sentences[index]))})
+            
+            arr_suspect_chunks = Helper.find_consecutive_numbers(suspect_sentences)
+            # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
             pdb.set_trace()
 
 
