@@ -119,7 +119,7 @@ class VectorAnaliser:
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
         stp = Helper.normalize_vector([stp])
-        
+
         toReturn = np.concatenate((awf, pcf))
         toReturn = np.concatenate((toReturn, stp))
         return Helper.normalize_vector(toReturn)
@@ -225,8 +225,7 @@ class VectorAnaliser:
 
             dict_cosine_similarity = Helper.compute_cosine_similarity_array(windows_total, doc_mean_vector)
             standard_deviation = Helper.stddev(windows_total, dict_cosine_similarity['cosine_array'], dict_cosine_similarity['mean'])
-            for cs in dict_cosine_similarity['cosine_array']:
+            for index, cs in enumerate(dict_cosine_similarity['cosine_array']):
                 print Helper.trigger_suspect(cs, dict_cosine_similarity['mean'], standard_deviation)
-            pdb.set_trace()
 
 

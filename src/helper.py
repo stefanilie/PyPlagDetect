@@ -209,7 +209,6 @@ class Helper:
     @param document - [[array]] statistics for the whole document
     @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
 
-    
     '''
     @staticmethod
     def compute_cosine_similarity_array(windows, document):
@@ -219,9 +218,14 @@ class Helper:
         sent_count = len(windows)
 
         for window in windows:
-            cs = cosine_similarity(window, document)
-            cs_sum+=cs
-            cosine_array.append(cs)
+            window_cosine_array=[]            
+            for index, item in enumerate(window):
+                cs = cosine_similarity([item], [document[index]])
+                cs_sum+=cs
+                window_cosine_array.append(cs)
+            cosine_array.append(window_cosine_array)
+                # daca merge, concateneaza asstea 3 din noul array 
+                # compara dupa cu document daca merge....
 
         if len(cosine_array):
             mean = np.true_divide(1, sent_count) * cs_sum
@@ -249,6 +253,7 @@ class Helper:
         for index, sent in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
             # TODO: check to see .sum methid from numpy
+            pdb.set_trace()
             sum += np.square(np.array(cosine_similarity_array[index]) - np.array(mean))
         return np.sqrt(np.true_divide(1, len(sent_array))*sum)
             
@@ -261,6 +266,14 @@ class Helper:
     '''
     @staticmethod
     def trigger_suspect(cosine_similarity_value, mean, stddev):
+        # this compares each element in the matrix, not the matrix in it's whole.
         return cosine_similarity_value < mean - e*stddev
         
 
+    @staticmethod
+    def compute_precision(detected_passages, ):
+        total_sum=[]
+        for passage in detected_passages:
+            chars_in_passage=sum(map(len, passage))
+
+                
