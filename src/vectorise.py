@@ -2,6 +2,7 @@ import pdb
 import pickle
 import string
 import numpy as np
+
 from math import log
 from numpy import dot
 from nltk import pos_tag
@@ -11,8 +12,8 @@ from collections import Counter
 from compiler.ast import flatten
 from nltk.probability import FreqDist
 from textstat.textstat import textstat
+from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
-
 
 class VectorAnaliser:
     k = 4
@@ -310,6 +311,12 @@ class VectorAnaliser:
                 dict_suspect_char_count.update({index: sum(map(len, sentences[index]))})
             
             arr_suspect_chunks = Helper.find_consecutive_numbers(suspect_sentences)
+
+            result_analizer = ResultsAnalyzer()
+            xml_data = result_analizer.get_offset_from_xml(file_item)
+            result_analizer.get_plagiarised(file_item, xml_data["offset"], xml_data["length"])
+            # TODO: see if it's fake positive or not
+
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
             pdb.set_trace()
 
