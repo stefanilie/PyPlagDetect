@@ -14,20 +14,34 @@ class ResultsAnalyzer:
     return fileids
 
   def get_offset_from_xml(self, file_name):
+    '''
+    Returns offset and length of plagiarised 
+    part of document.
+    Takes file_name, adds .xml extention 
+    and checks to see if the file exists.
+    @param file_name: name of file to search.
+    '''
     fileids = self.get_files_in_folder()
     if file_name not in fileids:
       raise Exception("File %s not present in folder" %(file_name))
     else:
       root_file_name = file_name.split('.')[0]
       root_file_name += '.xml'
+      if root_file_name not in fileids:
+        raise Exception("File %s not present in folder" %(file_name))
       tree = ET.parse(root_file_name)
       root = tree.getroot()
-      # TODO: return offset value
+      for child in root:
+        return {
+          "length": child['this_length'],
+          "offset": child['this_offset'],
+        }
 
 
   def get_plagiarised(self, file_name, offset, length):
     '''
-    Takes file_name
+    Returns plagiarized paragraph from suspicious file
+    based on the provided offset and length.
     '''
     if file_name not in self.corpus.fileids():
       raise Exception("File %s not present in corpus" %(file_name))
