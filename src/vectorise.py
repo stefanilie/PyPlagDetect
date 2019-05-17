@@ -12,6 +12,7 @@ from collections import Counter
 from compiler.ast import flatten
 from nltk.probability import FreqDist
 from textstat.textstat import textstat
+from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
 
@@ -99,41 +100,37 @@ class VectorAnaliser:
         return toReturn
 
     def new_avf(self, sentences, most_common_word_freq, suspicious_freq_dist):
-        awf=[]
-        pcf=[]
-        stp = []
-        pos = []
-        prn = []
-
-        words = flatten(sentences)
-        pos_tagged_sentences = self.compute_POS(sentences)
-        fdist = FreqDist(words)
-        for item in suspicious_freq_dist:
-            isInWindow = True if item in words else False
-            if isInWindow: 
-                # pos.append tagged value, else 0
-                # TODO: see why we needed the below comented line
-                word_freq = suspicious_freq_dist[item]
-                # word_freq = 1 if not suspicious_freq_dist[item] else suspicious_freq_dist[item]
-
-                awf.append(log(float(most_common_word_freq)/word_freq) / log(2) )         
-                pcf.append(fdist[item] if item in string.punctuation else 0)
-                stp.append(fdist[item] if item in self.stop_words else 0)
-                pos.append(pos_tagged_sentences[item])
-                if pos_tagged_sentences[item] == 3.0 or pos_tagged_sentences[item] == 3.5:
-                    prn.append(1)
-                else:
-                    prn.append(0)
-                # TODO: check if iterating sentences we have issues with 
-                # double values due to iterating also though docFreqDist
-                # prn.append(fdist[item] if tag == 'PRP' else 0)
-            else:
-                awf.append(0)
-                pcf.append(0)
-                stp.append(0)
-                pos.append(0)
-                prn.append(0)
+        # create empty vectors for all features
+        # will have length of fdist of the document
+        awf = [0] * len(suspicious_freq_dist)
+        pcf = [0] * len(suspicious_freq_dist)
+        stp = [0] * len(suspicious_freq_dist)
+        pos = [0] * len(suspicious_freq_dist)
+        prn = [0] * len(suspicious_freq_dist)
         
+        flat_sent = flatten(sentences)
+        fdist = FreqDist(flat_sent)
+
+        # computing array for all POS stored in objects
+        # each object represents a sentence.
+        arr_tagged_pos_per_sent = self.compute_POS(sentences)
+
+        # iterating sentences and then words in them
+        for index, words in enumerate(sentences):
+            for item in words:
+                word_freq = suspicious_freq_dist[item]
+                item_index = suspicious_freq_dist.keys().index(item)
+
+                # computing number of occurances 
+                awf[item_index] = log(float(most_common_word_freq)/word_freq) / log(2)
+                pcf[item_index] = fdist[item] if item in string.punctuation else 0
+                stp[item_index] = fdist[item] if item in self.stop_words else 0
+                pos[item_index] = arr_tagged_pos_per_sent[index][item]
+
+                # if it's a pronoun, then we take them into account
+                if arr_tagged_pos_per_sent[index][item] == 3.0 or arr_tagged_pos_per_sent[index][item] == 3.5:
+                    prn[item_index] = 1
+            
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
         stp = Helper.normalize_vector([stp])
@@ -151,24 +148,26 @@ class VectorAnaliser:
         toReturn.extend(pos)
         toReturn.extend(prn)
         # return np.array(Helper.normalize_vector([toReturn]))
+
         return Helper.normalize_vector([toReturn])
 
 
     '''
-    Return Dictionary with pos tokenized sentences values.
+    Return Array with dict per sent of pos tokenized sentences values.
     '''
     def compute_POS(self, sentences):
-        dict_pos={}
+        arr_pos=[]
         for sentence in sentences:
             # TODO: change to use this instead of default pos_tag
             # tagged_sent = self.tagger.tag(sentence)
+            
             tagged_sents = pos_tag(sentence)
             tagged_sents = self.create_pos_dict(tagged_sents)
             
-            # write a switch for pronouns also that returns 1 for each occurance.
-            dict_pos.update(tagged_sents)
+            # append to an array all objects
+            arr_pos.append(tagged_sents)
 
-        return dict_pos
+        return arr_pos
 
     '''
     Iterates sentence and passes through filter each POS.
@@ -249,7 +248,8 @@ class VectorAnaliser:
             suspicious_freq_dist = Helper.tokenize_file(corpus, self.stop_words, file_item, True)
 
             # TODO: replace with nltk.sent_tokenizer
-            sentences = corpus.sents(fileids=file_item)
+            # sentences = corpus.sents(fileids=file_item)
+            sentences = [word_tokenize(sent) for sent in sent_tokenize(corpus.raw(fileids=file_item))]
             windows = self.sliding_window(sentences, k)
             
             doc_mean_vector = self.new_avf(sentences, most_common_word_freq, suspicious_freq_dist)
@@ -290,7 +290,6 @@ class VectorAnaliser:
            
             # Another deprecated method, tried iterating by sentences not window.
             # for index, sentence in enumerate(sentences):
-            #     pdb.set_trace()
             #     if index-k/2 <= 0:
             #         windows_total.append(self.average_word_frequecy_class(flatten(windows[0]), most_common_word_freq, suspicious_freq_dist))
             #     elif index+k/2>len(sentences):
@@ -312,9 +311,13 @@ class VectorAnaliser:
             
             arr_suspect_chunks = Helper.find_consecutive_numbers(suspect_sentences)
 
-            result_analizer = ResultsAnalyzer()
+            result_analizer = ResultsAnalyzer(corpus=corpus)
             xml_data = result_analizer.get_offset_from_xml(file_item)
-            result_analizer.get_plagiarised(file_item, xml_data["offset"], xml_data["length"])
+            if xml_data:
+                plagiarised_passages = result_analizer.get_plagiarised(file_item, xml_data)
+                
+                # for chunk in arr_suspect_chunks:
+                    
             # TODO: see if it's fake positive or not
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)

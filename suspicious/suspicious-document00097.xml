@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<document
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://www.uni-weimar.de/medien/webis/research/corpora/pan-pc-09/document.xsd"
+    reference="suspicious-document00097.txt">
+  <feature name="artificial-plagiarism" translation="true" obfuscation="none" this_offset="1493" this_length="1603" />
+  <feature name="artificial-plagiarism" translation="true" obfuscation="none" this_offset="8563" this_length="3391" />
+  <feature name="artificial-plagiarism" translation="true" obfuscation="none" this_offset="16300" this_length="2319" />
+  <feature name="artificial-plagiarism" translation="true" obfuscation="none" this_offset="20100" this_length="224" />
+  <feature name="artificial-plagiarism" translation="true" obfuscation="none" this_offset="20324" this_length="243" />
+  <feature name="artificial-plagiarism" translation="true" obfuscation="none" this_offset="21494" this_length="407" />
+	<!-- Use tags like the one below to annotate plagiarism you detected. -->
+	<!-- <feature name="detected-plagiarism" this_offset="5" this_length="1000" /> -->
+</document>

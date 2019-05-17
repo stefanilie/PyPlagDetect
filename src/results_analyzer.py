@@ -1,3 +1,5 @@
+import pdb
+import os
 import xml.etree.ElementTree as ET
 
 from os import listdir
@@ -6,7 +8,7 @@ from src.config import SUSPICIOUS
 
 class ResultsAnalyzer:
 
-  def __init___(self, corpus):
+  def __init__(self, corpus):
     self.corpus = corpus
 
   def get_files_in_folder(self):
@@ -21,24 +23,32 @@ class ResultsAnalyzer:
     and checks to see if the file exists.
     @param file_name: name of file to search.
     '''
+    arr_offset_length = []
     fileids = self.get_files_in_folder()
     if file_name not in fileids:
       raise Exception("File %s not present in folder" %(file_name))
     else:
-      root_file_name = file_name.split('.')[0]
-      root_file_name += '.xml'
-      if root_file_name not in fileids:
-        raise Exception("File %s not present in folder" %(file_name))
-      tree = ET.parse(root_file_name)
-      root = tree.getroot()
-      for child in root:
-        return {
-          "length": child['this_length'],
-          "offset": child['this_offset'],
-        }
+      try:
+        current_directory=os.getcwd()
+        os.chdir(SUSPICIOUS)
+        
+        root_file_name = file_name.split('.')[0]
+        root_file_name += '.xml'
+        if root_file_name not in fileids:
+          raise Exception("File %s not present in folder" %(root_file_name))
+        tree = ET.parse(root_file_name)
+        root = tree.getroot()
+        for child in root:
+          arr_offset_length.append({
+            "length": child.attrib['this_length'],
+            "offset": child.attrib['this_offset'],
+          })
+        return arr_offset_length
+      except:
+        print "File %s not present in folder" %(root_file_name)
 
 
-  def get_plagiarised(self, file_name, offset, length):
+  def get_plagiarised(self, file_name, xml_data):
     '''
     Returns plagiarized paragraph from suspicious file
     based on the provided offset and length.
@@ -46,7 +56,9 @@ class ResultsAnalyzer:
     if file_name not in self.corpus.fileids():
       raise Exception("File %s not present in corpus" %(file_name))
     else:
+      arr_plagiarised = []
       f = open(file_name, 'r')
-      f.seek(offset)
-      plagiarised = f.read(length)
-      return plagiarised
+      for xml_line in xml_data:
+        f.seek(int(xml_line['offset']))
+        arr_plagiarised.append(f.read(int(xml_line['length'])))
+      return arr_plagiarised
