@@ -62,3 +62,12 @@ class ResultsAnalyzer:
         f.seek(int(xml_line['offset']))
         arr_plagiarised.append(f.read(int(xml_line['length'])))
       return arr_plagiarised
+
+  def chunks_to_passages(self, sentences, chunks):
+    arr_passages = []
+    for chunk in chunks:
+      if len(chunk) == 1:
+        arr_passages.append(sentences[chunk[0]])
+      elif len(chunk) > 1:
+        arr_passages.append(sentences[chunk[0]:chunk[-1]])
+    return arr_passages

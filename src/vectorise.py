@@ -119,6 +119,8 @@ class VectorAnaliser:
         for index, words in enumerate(sentences):
             for item in words:
                 word_freq = suspicious_freq_dist[item]
+                if item not in  suspicious_freq_dist.keys():
+                    continue
                 item_index = suspicious_freq_dist.keys().index(item)
 
                 # computing number of occurances 
@@ -250,10 +252,10 @@ class VectorAnaliser:
             # TODO: replace with nltk.sent_tokenizer
             # sentences = corpus.sents(fileids=file_item)
             sentences = [word_tokenize(sent) for sent in sent_tokenize(corpus.raw(fileids=file_item))]
-            windows = self.sliding_window(sentences, k)
+            # windows = self.sliding_window(sentences, k)
             
             doc_mean_vector = self.new_avf(sentences, most_common_word_freq, suspicious_freq_dist)
-            doc_mean_vector = Helper.normalize_vector([doc_mean_vector])
+            # doc_mean_vector = Helper.normalize_vector([doc_mean_vector])
             
             for index, sentence in enumerate(sentences):
                 '''
@@ -271,40 +273,16 @@ class VectorAnaliser:
 
                 toAppend = self.new_avf(arr_sentences, most_common_word_freq, suspicious_freq_dist)
                 # toAppend.extend(self.compute_POS(arr_sentences, suspicious_freq_dist))
-                windows_total.append(Helper.normalize_vector([toAppend]))
-
-                # windows_total.append(self.compute_POS(arr_sentences, suspicious_freq_dist))
-                # windows_total.append(self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist))
-
-            # TODO: old way of generating the window.
-            # Still works but can't iterate bearing in mind sentences.
-            # for window in windows:
-                # windows_total.append(self.new_avf(flatten(arr_sentences), most_common_word_freq, suspicious_freq_dist))
+                # windows_total.append(Helper.normalize_vector([toAppend]))
+                windows_total.append(toAppend)
             
-
-            # Deprecated method trying to compute everything based on vector norm.
-            # for window in windows:
-            #     windows_total.append(self.average_word_frequecy_class(flatten(window), most_common_word_freq, suspicious_freq_dist))
-            #     windows_total[-1].extend(self.compute_POS(window))
-            #     windows_total[-1] = Helper.normalize_vector(windows_total[-1])
-           
-            # Another deprecated method, tried iterating by sentences not window.
-            # for index, sentence in enumerate(sentences):
-            #     if index-k/2 <= 0:
-            #         windows_total.append(self.average_word_frequecy_class(flatten(windows[0]), most_common_word_freq, suspicious_freq_dist))
-            #     elif index+k/2>len(sentences):
-            #         windows_total.append(self.average_word_frequecy_class(flatten(windows[len(windows)-1]), most_common_word_freq, suspicious_freq_dist))
-            #     else:
-            #         windows_total.append(self.average_word_frequecy_class(flatten(windows[index]), most_common_word_freq, suspicious_freq_dist))            
-            
-            self.compute_cosine_similarity_array(windows_total, doc_mean_vector)
-            # self.mean = self.mean
-            # self.arr_cosine_similarity = self.arr_cosine_similarity
+            self.compute_cosine_similarity_array(windows_total, doc_mean_vector)   
             self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
             suspect_sentences = []
             dict_suspect_char_count = {}
             for index, cs in enumerate(self.arr_cosine_similarity):
                 isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
+                print "index: %s, is suspect: %s" %(str(index), str(isSuspect))
                 suspect_sentences.append(index) if isSuspect else False
                 # compute number of chars in one suspect sentece
                 dict_suspect_char_count.update({index: sum(map(len, sentences[index]))})
@@ -314,8 +292,10 @@ class VectorAnaliser:
             result_analizer = ResultsAnalyzer(corpus=corpus)
             xml_data = result_analizer.get_offset_from_xml(file_item)
             if xml_data:
-                plagiarised_passages = result_analizer.get_plagiarised(file_item, xml_data)
-                
+                actual_plagiarised_passages = result_analizer.get_plagiarised(file_item, xml_data)
+                detected_plagiarised_passages = result_analizer.chunks_to_passages(sentences, arr_suspect_chunks)
+                pdb.set_trace()
+
                 # for chunk in arr_suspect_chunks:
                     
             # TODO: see if it's fake positive or not
