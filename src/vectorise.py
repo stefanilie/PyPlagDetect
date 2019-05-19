@@ -18,9 +18,9 @@ from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
 
 class VectorAnaliser:
     k = 4
-    '''
+    """
     Constructor
-    '''
+    """
     def __init__(self, corpus, tagger, stop_words):
         self.corpus = corpus
         self.tagger = tagger
@@ -31,12 +31,11 @@ class VectorAnaliser:
         self.mean = 0.0
         self.standard_deviation = 0.0
 
-    '''
-    Tokenizes all corpuses and generates a Frequency Distribution.
-    @return [nltk.FreqDest] Frequency Distributiion
-    ToDo: add pickle for storage after execution.
-    '''
     def tokenize_corpuses(self, file_name):
+        """
+        Tokenizes all corpuses and generates a Frequency Distribution.
+        @return [nltk.FreqDest] Frequency Distributiion
+        """
         self.tokenized += Helper.tokenize_corpus(gutenberg, self.stop_words)
         self.tokenized += Helper.tokenize_corpus(movie_reviews, self.stop_words)
         self.tokenized += Helper.tokenize_corpus(abc, self.stop_words)
@@ -45,61 +44,15 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(self.corpus, self.stop_words)
         Helper.create_dump(self.tokenized, file_name)
 
+    def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist):
+        """
+        Main method for computing features of the text.
+        Iterates words in sentences and computes:
+        average word frequency, stopwords,
+        punctuation, POS tags, and pronouns.
 
-    def sliding_window(self, sequence, winSize, step=1):
-        """Returns a generator that will iterate through
-        the defined chunks of input sequence.  Input sequence
-        must be iterable."""
-    
-        # Verify the inputs
-        try: it = iter(sequence)
-        except TypeError:
-            raise Exception("**ERROR** sequence must be iterable.")
-        if not ((type(winSize) == type(0)) and (type(step) == type(0))):
-            raise Exception("**ERROR** type(winSize) and type(step) must be int.")
-        if step > winSize:
-            raise Exception("**ERROR** step must not be larger than winSize.")
-        if winSize > len(sequence):
-            raise Exception("**ERROR** winSize must not be larger than sequence length.")
-    
-        # Pre-compute number of chunks to emit
-        numOfChunks = ((len(sequence)-winSize)/step)+1
-    
-        # Do the work
-        for i in range(0,numOfChunks*step,step):
-            yield sequence[i:i+winSize]
-
-
-    '''
-    Calculates average word and punctuation classes.
-    @param words - [array string] words that need to be analysed.
-    @param most_common_word_freq - [int] frequency of the most common word in a huge corpus
-    @param suspicious_freq_dist - [array FreqDist] freq distribution of the suspect corpus
-
-    TODO: check if dividing by word_freq is right. Might need to see value in relation 
-    to huge corpus not window. 
-
-    -------------------------------------DEPRECATED------------------------------------------
-    '''
-    def average_word_frequecy_class(self, words, most_common_word_freq, suspicious_freq_dist):
-        toReturn=[]
-        awf = []
-        pcf = []
-        window_freq_dist = FreqDist(words)
-        for word in words:
-            if word in string.punctuation:
-                pcf.append(window_freq_dist[word])   
-            else:
-                word_freq = 1 if not suspicious_freq_dist[word] else suspicious_freq_dist[word]
-                awf.append(log(float(most_common_word_freq)/word_freq)/log(2))         
-
-        toReturn.append(Helper.normalize_vector(awf))
-        toReturn.append(Helper.normalize_vector(pcf))
-
-
-        return toReturn
-
-    def new_avf(self, sentences, most_common_word_freq, suspicious_freq_dist):
+        @return normalized feature vector
+        """
         # create empty vectors for all features
         # will have length of fdist of the document
         awf = [0] * len(suspicious_freq_dist)
@@ -153,11 +106,10 @@ class VectorAnaliser:
 
         return Helper.normalize_vector([toReturn])
 
-
-    '''
-    Return Array with dict per sent of pos tokenized sentences values.
-    '''
     def compute_POS(self, sentences):
+        """
+        Return Array with dict per sent of pos tokenized sentences values.
+        """
         arr_pos=[]
         for sentence in sentences:
             # TODO: change to use this instead of default pos_tag
@@ -171,25 +123,24 @@ class VectorAnaliser:
 
         return arr_pos
 
-    '''
-    Iterates sentence and passes through filter each POS.
-    Returns dictionary containing {word: pos}
-    '''
     def create_pos_dict(self, tagged_sent):
+        """
+        Iterates sentence and passes through filter each POS.
+        Returns dictionary containing {word: pos}
+        """
         dict_pos={}
         for (word, pos) in tagged_sent:
             dict_pos[word] = Helper.switch_pos(pos)
         return dict_pos
 
-
-    '''
-    Calculates the cosine similarity between the window sentences and mean document
-    feature arrays. Uses scikit learn method for this.
-    @param windows - [[array]] statistics for all windiws/sentences in the doc
-    @param document - [[array]] statistics for the whole document
-    @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
-    '''
     def compute_cosine_similarity_array(self, windows, document):
+        """
+        Calculates the cosine similarity between the window sentences and mean document
+        feature arrays. Uses scikit learn method for this.
+        @param windows - [[array]] statistics for all windiws/sentences in the doc
+        @param document - [[array]] statistics for the whole document
+        @return dict_reply = [dict] mean cosine similarity and array with all computed cosine similarities 
+        """
         cs_sum=0
         cosine_array=[]
         sent_count = len(windows)
@@ -203,12 +154,11 @@ class VectorAnaliser:
             mean = np.true_divide(1, sent_count) * cs_sum
             self.mean = mean
             self.arr_cosine_similarity = cosine_array
-        
 
-    '''
-    Generates suspect passages array by concatenating all consecutive suspect sentences. 
-    '''
     def generate_passages(self):
+        """
+        Generates suspect passages array by concatenating all consecutive suspect sentences. 
+        """
         arr_suspect_index=[]
         for index, cs in enumerate(self.arr_cosine_similarity):
            isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
@@ -218,11 +168,45 @@ class VectorAnaliser:
         arr_suspect_index = Helper.find_consecutive_numbers(arr_suspect_index)
         return arr_suspect_index
 
-    '''
-    Main method for vectorising the corpus.
-    @param corpus:
-    '''
+    def get_suspect_index(self, sentences):   
+        """
+        Checks if the window aligns with the rest of the document.
+        Triggers true or false response based on that.
+        If is suspect, it adds the index of the sentence to the suspect list.
+        @return list of suspect window indexes grouped by consecutive arrays.
+        """ 
+        suspect_sentences = []
+        dict_suspect_char_count = {}
+        for index, cs in enumerate(self.arr_cosine_similarity):
+            isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
+            
+            print "index: %s, is suspect: %s" %(str(index), str(isSuspect))
+            suspect_sentences.append(index) if isSuspect else False
+            
+            # compute number of chars in one suspect sentece
+            dict_suspect_char_count.update({index: sum(map(len, sentences[index]))})
+        
+        arr_suspect_chunks = Helper.find_consecutive_numbers(suspect_sentences)
+        return arr_suspect_chunks
+
+    def compare_with_xml(self, file_item):
+        """
+        Compares the paragraphs detected by the algorithm 
+        with the ones provided by the training corpus.
+        @return: TODO: number of correct detected chars.
+        """
+        result_analizer = ResultsAnalyzer(corpus=self.corpus)
+        xml_data = result_analizer.get_offset_from_xml(file_item)
+        if xml_data:
+            actual_plagiarised_passages = result_analizer.get_plagiarised(file_item, xml_data)
+            detected_plagiarised_passages = result_analizer.chunks_to_passages(sentences, arr_suspect_chunks)
+            pdb.set_trace()
+
     def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
+        """
+        Main method for vectorising the corpus.
+        @param corpus:
+        """
         file_name = "tokenized.pickle"
        
         # check if tokenized is done.
@@ -235,9 +219,8 @@ class VectorAnaliser:
         # Tokenizing suspicious corpus and getting most common from HUGE corpus.
         files = corpus.fileids()
         self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
-
-        # # TODO: changing this to point to current file, not whole corpus.
-        # suspicious_freq_dist = FreqDist(self.suspect_corpus_tokenized)
+        
+        # Most common word in a big corpus.
         most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
 
         # temporary value for k.
@@ -249,20 +232,18 @@ class VectorAnaliser:
 
             suspicious_freq_dist = Helper.tokenize_file(corpus, self.stop_words, file_item, True)
 
-            # TODO: replace with nltk.sent_tokenizer
-            # sentences = corpus.sents(fileids=file_item)
+            # tokenizing the words from the sentences 
             sentences = [word_tokenize(sent) for sent in sent_tokenize(corpus.raw(fileids=file_item))]
-            # windows = self.sliding_window(sentences, k)
             
-            doc_mean_vector = self.new_avf(sentences, most_common_word_freq, suspicious_freq_dist)
-            # doc_mean_vector = Helper.normalize_vector([doc_mean_vector])
+            # computing the document mean vector
+            doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist)
             
             for index, sentence in enumerate(sentences):
-                '''
+                """
                 Window is represented by all k+1 items.
                 Until index is equal to k/2, it will jump.
                 After, it will pass through until index+k is equal to length.
-                '''
+                """
                 arr_sentences = []
                 if index<k/2:
                     arr_sentences = sentences[:k]
@@ -271,31 +252,17 @@ class VectorAnaliser:
                 else:
                     arr_sentences = sentences[index-k/2:index+k/2]                    
 
-                toAppend = self.new_avf(arr_sentences, most_common_word_freq, suspicious_freq_dist)
-                # toAppend.extend(self.compute_POS(arr_sentences, suspicious_freq_dist))
-                # windows_total.append(Helper.normalize_vector([toAppend]))
+                toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist)
                 windows_total.append(toAppend)
             
-            self.compute_cosine_similarity_array(windows_total, doc_mean_vector)   
+            # compute cosine similarity for all windows plus mean
+            self.compute_cosine_similarity_array(windows_total, doc_mean_vector)  
+
+            # computing the standard deviation 
             self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
-            suspect_sentences = []
-            dict_suspect_char_count = {}
-            for index, cs in enumerate(self.arr_cosine_similarity):
-                isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
-                print "index: %s, is suspect: %s" %(str(index), str(isSuspect))
-                suspect_sentences.append(index) if isSuspect else False
-                # compute number of chars in one suspect sentece
-                dict_suspect_char_count.update({index: sum(map(len, sentences[index]))})
-            
-            arr_suspect_chunks = Helper.find_consecutive_numbers(suspect_sentences)
 
-            result_analizer = ResultsAnalyzer(corpus=corpus)
-            xml_data = result_analizer.get_offset_from_xml(file_item)
-            if xml_data:
-                actual_plagiarised_passages = result_analizer.get_plagiarised(file_item, xml_data)
-                detected_plagiarised_passages = result_analizer.chunks_to_passages(sentences, arr_suspect_chunks)
-                pdb.set_trace()
-
+            arr_suspect_chunks = self.get_suspect_index(sentences)
+ 
                 # for chunk in arr_suspect_chunks:
                     
             # TODO: see if it's fake positive or not
@@ -304,3 +271,4 @@ class VectorAnaliser:
             pdb.set_trace()
 
 
+ 
