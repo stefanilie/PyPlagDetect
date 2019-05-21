@@ -55,11 +55,13 @@ class VectorAnaliser:
         """
         # create empty vectors for all features
         # will have length of fdist of the document
-        awf = [0] * len(suspicious_freq_dist)
-        pcf = [0] * len(suspicious_freq_dist)
-        stp = [0] * len(suspicious_freq_dist)
-        pos = [0] * len(suspicious_freq_dist)
-        prn = [0] * len(suspicious_freq_dist)
+        awf = [0] * len(suspicious_freq_dist) # average word frq
+        pcf = [0] * len(suspicious_freq_dist) # punctuation signs
+        stp = [0] * len(suspicious_freq_dist) # stopwords
+        pos = [0] * len(suspicious_freq_dist) # parts of speech
+        prn = [0] * len(suspicious_freq_dist) # pronouns
+        awl = [] # average words length
+        asl = [0] * len(sentences) # average sentence length
         
         flat_sent = flatten(sentences)
         fdist = FreqDist(flat_sent)
@@ -70,21 +72,23 @@ class VectorAnaliser:
 
         # iterating sentences and then words in them
         for index, words in enumerate(sentences):
-            for item in words:
-                word_freq = suspicious_freq_dist[item]
-                if item not in  suspicious_freq_dist.keys():
+            for word in words:
+                word_freq = suspicious_freq_dist[word]
+                if word not in  suspicious_freq_dist.keys():
                     continue
-                item_index = suspicious_freq_dist.keys().index(item)
+                item_index = suspicious_freq_dist.keys().index(word)
 
                 # computing number of occurances 
                 awf[item_index] = log(float(most_common_word_freq)/word_freq) / log(2)
-                pcf[item_index] = fdist[item] if item in string.punctuation else 0
-                stp[item_index] = fdist[item] if item in self.stop_words else 0
-                pos[item_index] = arr_tagged_pos_per_sent[index][item]
+                pcf[item_index] = fdist[word] if word in string.punctuation else 0
+                stp[item_index] = fdist[word] if word in self.stop_words else 0
+                pos[item_index] = arr_tagged_pos_per_sent[index][word]
 
                 # if it's a pronoun, then we take them into account
-                if arr_tagged_pos_per_sent[index][item] == 3.0 or arr_tagged_pos_per_sent[index][item] == 3.5:
+                if arr_tagged_pos_per_sent[index][word] == 3.0 or arr_tagged_pos_per_sent[index][word] == 3.5:
                     prn[item_index] = 1
+                awl.append(len(word))
+                asl[index] += len(word)            
             
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
@@ -92,12 +96,11 @@ class VectorAnaliser:
         pos = Helper.normalize_vector([pos])
         prn = Helper.normalize_vector([prn])
 
-        
-        # Old way of doing things, it adds vectors to an array        
-        # toReturn = np.concatenate((awf, pcf))
-        # toReturn = np.concatenate((toReturn, stp))
-
-        toReturn = awf
+        # TODO: check if awl and asl are summed up accordingly
+        pdb.set_trace()
+        toReturn = np.average(awl)
+        toReturn = np.average(asl)
+        toReturn.extend(awf)
         toReturn.extend(pcf)
         toReturn.extend(stp)
         toReturn.extend(pos)
@@ -189,7 +192,7 @@ class VectorAnaliser:
         arr_suspect_chunks = Helper.find_consecutive_numbers(suspect_sentences)
         return arr_suspect_chunks
 
-    def compare_with_xml(self, file_item):
+    def compare_with_xml(self, file_item, sentences, suspect_indexes):
         """
         Compares the paragraphs detected by the algorithm 
         with the ones provided by the training corpus.
@@ -199,7 +202,7 @@ class VectorAnaliser:
         xml_data = result_analizer.get_offset_from_xml(file_item)
         if xml_data:
             actual_plagiarised_passages = result_analizer.get_plagiarised(file_item, xml_data)
-            detected_plagiarised_passages = result_analizer.chunks_to_passages(sentences, arr_suspect_chunks)
+            detected_plagiarised_passages = result_analizer.chunks_to_passages(sentences, suspect_indexes)
             pdb.set_trace()
 
     def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
@@ -262,6 +265,10 @@ class VectorAnaliser:
             self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
 
             arr_suspect_chunks = self.get_suspect_index(sentences)
+            self.compare_with_xml(file_item, sentences, arr_suspect_chunks)
+
+            result_analyzer = ResultsAnalyzer(self.corpus)
+            result_analyzer.Analysis(windows_total)
  
                 # for chunk in arr_suspect_chunks:
                     
