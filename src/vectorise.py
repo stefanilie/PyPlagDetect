@@ -11,7 +11,7 @@ from numpy.linalg import norm
 from collections import Counter
 from compiler.ast import flatten
 from nltk.probability import FreqDist
-from textstat.textstat import textstat
+from sacremoses import MosesDetokenizer
 from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
@@ -30,6 +30,7 @@ class VectorAnaliser:
         self.arr_cosine_similarity = {}
         self.mean = 0.0
         self.standard_deviation = 0.0
+        self.md = MosesDetokenizer(lang='en')
 
     def tokenize_corpuses(self, file_name):
         """
@@ -62,9 +63,14 @@ class VectorAnaliser:
         prn = [0] * len(suspicious_freq_dist) # pronouns
         awl = [] # average words length
         asl = [0] * len(sentences) # average sentence length
+        awps = [0] * len(sentences) # average words per sentence
+        hapax = 0 # hapax legomena value
+        toReturn = []
         
+
         flat_sent = flatten(sentences)
         fdist = FreqDist(flat_sent)
+        hapax = np.true_divide(len(fdist.hapaxes()), len(flat_sent))
 
         # computing array for all POS stored in objects
         # each object represents a sentence.
@@ -88,7 +94,9 @@ class VectorAnaliser:
                 if arr_tagged_pos_per_sent[index][word] == 3.0 or arr_tagged_pos_per_sent[index][word] == 3.5:
                     prn[item_index] = 1
                 awl.append(len(word))
-                asl[index] += len(word)            
+                asl[index] += len(word)
+            awps[index] = len(words)
+
             
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
@@ -96,10 +104,10 @@ class VectorAnaliser:
         pos = Helper.normalize_vector([pos])
         prn = Helper.normalize_vector([prn])
 
-        # TODO: check if awl and asl are summed up accordingly
-        pdb.set_trace()
-        toReturn = np.average(awl)
-        toReturn = np.average(asl)
+        toReturn.append(np.average(awl))
+        toReturn.append(np.average(asl))
+        toReturn.append(np.average(awps))
+        toReturn.append(hapax)
         toReturn.extend(awf)
         toReturn.extend(pcf)
         toReturn.extend(stp)
@@ -192,18 +200,20 @@ class VectorAnaliser:
         arr_suspect_chunks = Helper.find_consecutive_numbers(suspect_sentences)
         return arr_suspect_chunks
 
-    def compare_with_xml(self, file_item, sentences, suspect_indexes):
+    def compare_with_xml(self, file_item, dict_offset_index, suspect_indexes):
         """
         Compares the paragraphs detected by the algorithm 
         with the ones provided by the training corpus.
         @return: TODO: number of correct detected chars.
         """
-        result_analizer = ResultsAnalyzer(corpus=self.corpus)
-        xml_data = result_analizer.get_offset_from_xml(file_item)
+        result_analizer = ResultsAnalyzer(self.corpus, file_item)
+        xml_data = result_analizer.get_offset_from_xml()
         if xml_data:
-            actual_plagiarised_passages = result_analizer.get_plagiarised(file_item, xml_data)
-            detected_plagiarised_passages = result_analizer.chunks_to_passages(sentences, suspect_indexes)
+            actual_plagiarised_passages = result_analizer.get_plagiarised(xml_data)
+            detected_plagiarised_passages = self.md.detokenize(result_analizer.chunks_to_passages(dict_offset_index, suspect_indexes))
+            # TODO: Check if this approach with dict_sentences is right.
             pdb.set_trace()
+
 
     def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
         """
@@ -215,7 +225,7 @@ class VectorAnaliser:
         # check if tokenized is done.
         if not len(self.tokenized) and not should_tokenize_corpuses:
             self.tokenized = Helper.read_dump(file_name)
-            dist_huge_token = FreqDist(self.tokenized)
+            dist_husige_token = FreqDist(self.tokenized)
         elif not len(self.tokenized) and should_tokenize_corpuses:
             self.tokenize_corpuses(file_name)
 
@@ -232,6 +242,9 @@ class VectorAnaliser:
         for file_item in files:
             windows_total = []
             doc_mean_vector = []
+            dict_all_sentences = {} # used to save all the windows sent for analization.
+            dict_offset_index = {} # used for saving the start offset and lenght of each window.
+            offset_counter = 0
 
             suspicious_freq_dist = Helper.tokenize_file(corpus, self.stop_words, file_item, True)
 
@@ -257,7 +270,13 @@ class VectorAnaliser:
 
                 toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist)
                 windows_total.append(toAppend)
-            
+                
+                dict_all_sentences[index] = sentence
+
+                new_offset = len(self.md.detokenize(sentence))
+                offset_counter += new_offset
+                dict_offset_index[index] = [offset_counter, new_offset]
+
             # compute cosine similarity for all windows plus mean
             self.compute_cosine_similarity_array(windows_total, doc_mean_vector)  
 
@@ -265,13 +284,8 @@ class VectorAnaliser:
             self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
 
             arr_suspect_chunks = self.get_suspect_index(sentences)
-            self.compare_with_xml(file_item, sentences, arr_suspect_chunks)
-
-            result_analyzer = ResultsAnalyzer(self.corpus)
-            result_analyzer.Analysis(windows_total)
+            self.compare_with_xml(file_item, dict_offset_index, arr_suspect_chunks)
  
-                # for chunk in arr_suspect_chunks:
-                    
             # TODO: see if it's fake positive or not
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
