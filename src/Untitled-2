@@ -1,0 +1,21 @@
+xml_data
+[
+  {'length': '1603', 'offset': '1493'}, 
+  {'length': '3391', 'offset': '8563'}, 
+  {'length': '2319', 'offset': '16300'}, 
+  {'length': '224', 'offset': '20100'}, 
+  {'length': '243', 'offset': '20324'}, 
+  {'length': '407', 'offset': '21494'}
+]
+
+[[x['offset'], int(x['offset'])+int(x['length'])] for x in xml_data]
+
+intervals
+[1493, 3096] = [offset, endoffset]
+
+chunks
+[[18, 19, 20]]
+
+[[x[0], x[0]+x[1]] for x in a]
+
+[[y[0], y[0]+y[1]] for x, y in di.iteritems()]

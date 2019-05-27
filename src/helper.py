@@ -157,6 +157,14 @@ class Helper:
     def compute_TF(term, tokenized_document):
         return 1 + log(tokenized_document.count(term))
 
+    @staticmethod
+    def get_overlap(a, b):
+      '''
+      Computes the overlap of the provided intervals.
+      Returns number of shared items.
+      '''
+      return max(0, min(a[1], b[1]) - max(a[0], b[0]))
+
     '''
     Computes the Inverse Term Frequency (IDF) coeficient.
     IDF = log(Nr of Docs in the Corpus / Nr of Docs in which the word appears).
@@ -298,7 +306,7 @@ class Helper:
         sum=0
         for index, sent in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
-            # TODO: check to see .sum methid from numpy
+            # TODO: check to see .sum methid f  rom numpy
             sum += np.square(np.array(cosine_similarity_array[index]) - np.array(mean))
         return np.sqrt(np.true_divide(1, len(sent_array))*sum)
             
@@ -313,10 +321,36 @@ class Helper:
     def trigger_suspect(cosine_similarity_value, mean, stddev):
         return cosine_similarity_value < mean - e*stddev
         
+    @staticmethod
+    def precision(arr_overlap, arr_plag_offset):
+        '''
+        true positive/actual results
+        '''
+        s=0
+        for index, plag_interval in enumerate(arr_plag_offset):
+            plagiarized_chars = plag_interval[1]-plag_interval[0]
+            s += np.true_divide(arr_overlap[index], plagiarized_chars)
+        return np.true_divide(s, len(arr_plag_offset))
+
+    @staticmethod
+    def recall(arr_suspect_overlap, arr_suspect_offset):
+        '''
+        true positive / predicted results
+        '''
+        s=0
+        # check here if sus.offset has same length ass sus.overlap 
+        for index, suspect_interval in enumerate(arr_suspect_offset):
+            suspect_chars = arr_suspect_offset[index][1]-arr_suspect_offset[index][0]
+            s += np.true_divide(arr_suspect_overlap[index], suspect_chars)
+        return np.true_divide(s, len(arr_suspect_offset))
+
     # @staticmethod
-    # def precision(arr_detected_passages, arr_detected_char_count):
-    #     sum=0
-    #     S = len(arr_passages) #number of passages
-    #     for pasage in arr_passages:
-            
+    # def accuracy(arr_overlap, )
+
+    @staticmethod
+    def granularity_f1(precision, recall, arr_overlap):
+        if precision and recall :
+            f1 = np.true_divide(2*precision*recall, precision+recall)
+            return f1
+
             

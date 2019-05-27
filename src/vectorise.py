@@ -31,6 +31,9 @@ class VectorAnaliser:
         self.mean = 0.0
         self.standard_deviation = 0.0
         self.md = MosesDetokenizer(lang='en')
+        self.arr_plag_offset = []
+        self.arr_suspect_offset = []
+        self.arr_suspect_overlap = []
 
     def tokenize_corpuses(self, file_name):
         """
@@ -191,7 +194,7 @@ class VectorAnaliser:
         for index, cs in enumerate(self.arr_cosine_similarity):
             isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
             
-            print "index: %s, is suspect: %s" %(str(index), str(isSuspect))
+            # print "index: %s, is suspect: %s" %(str(index), str(isSuspect))
             suspect_sentences.append(index) if isSuspect else False
             
             # compute number of chars in one suspect sentece
@@ -209,15 +212,18 @@ class VectorAnaliser:
         result_analizer = ResultsAnalyzer(self.corpus, file_item)
         xml_data = result_analizer.get_offset_from_xml()
         if xml_data:
-            actual_plagiarised_passages = result_analizer.get_plagiarised(xml_data)
-            detected_plagiarised_passages = self.md.detokenize(result_analizer.chunks_to_passages(dict_offset_index, suspect_indexes))
-            # TODO: Check if this approach with dict_sentences is right.
-            pdb.set_trace()
+            # actual_plagiarised_passages = result_analizer.get_plagiarised(xml_data)
+            # detected_plagiarised_passages = self.md.detokenize(result_analizer.chunks_to_passages(dict_offset_index, suspect_indexes))
+            self.arr_plag_offset = [[int(x['offset']), int(x['offset'])+int(x['length'])] for x in xml_data]
+            self.arr_suspect_offset = result_analizer.chunks_to_offset(dict_offset_index, suspect_indexes)
+
+
+            self.arr_overlap, self.arr_suspect_overlap = result_analizer.compare_offsets(self.arr_plag_offset, self.arr_suspect_offset)
 
 
     def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
         """
-        Main method for vectorising the corpus.
+        Main method for vectorising the corpus. 
         @param corpus:
         """
         file_name = "tokenized.pickle"
@@ -242,6 +248,9 @@ class VectorAnaliser:
         for file_item in files:
             windows_total = []
             doc_mean_vector = []
+            arr_mean_precision = []
+            arr_mean_recall = []
+            arr_mean_f1 = []
             dict_all_sentences = {} # used to save all the windows sent for analization.
             dict_offset_index = {} # used for saving the start offset and lenght of each window.
             offset_counter = 0
@@ -285,11 +294,25 @@ class VectorAnaliser:
 
             arr_suspect_chunks = self.get_suspect_index(sentences)
             self.compare_with_xml(file_item, dict_offset_index, arr_suspect_chunks)
- 
-            # TODO: see if it's fake positive or not
+
+            if self.arr_plag_offset:
+                recall = Helper.precision(self.arr_overlap, self.arr_plag_offset)
+                precision = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
+                f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
+                print "%s precision: " % (file_item), precision
+                print "%s recall: " % (file_item), recall
+                print "%s f1: " % (file_item), f1
+
+                arr_mean_recall.append(recall)
+                arr_mean_precision.append(precision)
+                arr_mean_f1.append(f1)
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
-            pdb.set_trace()
+        pdb.set_trace()
+        print "============TOTAL================="
+        print "precision: ", np.mean(np.array(arr_mean_precision))
+        print "recall: ", np.mean(np.array(arr_mean_recall))
+        print "f1: ", np.mean(np.array(arr_mean_f1))
 
 
  

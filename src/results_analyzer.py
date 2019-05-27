@@ -7,6 +7,8 @@ from os import listdir
 from compiler.ast import flatten
 from os.path import isfile, join
 from src.config import SUSPICIOUS
+from helper import Helper
+
 
 class ResultsAnalyzer:
 
@@ -90,7 +92,74 @@ class ResultsAnalyzer:
         offset = dict_offset_index[chunk[0]][0]
         length = 0
         for item in chunk:
-          pdb.set_trace()
           length += dict_offset_index[item][-1]
         arr_passages.append(self.read_by_offset(offset, length))
     return flatten(arr_passages)
+
+  def chunks_to_offset(self, dict_offset_index, chunks):
+    '''
+    Takes offset index of windows and suspect chunk indexes 
+    and returns offset indexes of suspect windows.
+    @param: dict_offset_index - contains where each sentence starts and its length
+    @param: chunks - index of possbile plagiarized sentences.
+    @return arr_passages - array of type [[a,b]] where 
+    a is the begining offset
+    b is the end offset.
+    '''
+    arr_passages = []
+    for chunk in chunks:
+      if len(chunk) == 1:
+        offset = dict_offset_index[chunk[0]][0]
+        length = dict_offset_index[chunk[0]][-1]
+        arr_passages.append([offset, offset+length])
+      elif len(chunk) > 1:
+        offset = dict_offset_index[chunk[0]][0]
+        length = 0
+        for item in chunk:
+          length += dict_offset_index[item][-1]
+        arr_passages.append([offset, offset+length])
+    return arr_passages
+
+  def compare_offsets(self, arr_plag_offset, arr_suspect_offset):
+    '''
+    Compares only the offsets and tells how many chars were detected.
+    '''
+    arr_overlap = [0] * len(arr_plag_offset)
+    arr_suspect_overlap = [0] * len(arr_suspect_offset)
+
+    for suspect_index, suspect_interval in enumerate(arr_suspect_offset):
+      for plag_index, plag_interval in enumerate(arr_plag_offset):
+        overlap = Helper.get_overlap(suspect_interval, plag_interval)
+        # suspect_length = suspect_interval[1]-suspect_interval[0]
+        # false_positive = suspect_length - overlap
+        if overlap:
+          if arr_overlap[plag_index]:
+            arr_overlap[plag_index] += overlap
+          else:
+            arr_overlap[plag_index] = overlap
+          if arr_suspect_overlap[suspect_index]:
+            arr_suspect_overlap[suspect_index] += overlap
+          else:
+            arr_suspect_overlap[suspect_index] = overlap
+    return arr_overlap, arr_suspect_overlap
+        
+        # TODO: remove this when certainly we don't need it.
+        # if suspect_interval[0] > plag_interval[0] and suspect_interval[1] < plag_interval[1]:
+        #     overlap = Helper.get_overlap(suspect_interval, plag_interval)
+        #     if overlap:
+        #       if arr_overlap[plag_index]:
+        #         # Check why is this happening.
+        #         pdb.set_trace()
+        #     arr_overlap[plag_index] = overlap
+        # elif suspect_interval[0] <= plag_interval[0]:   
+        #   if suspect_interval[1] < plag_interval[0]:
+        #     continue
+        #   overlap = Helper.get_overlap(suspect_interval, plag_interval)
+        #   if overlap:
+        #     if arr_overlap[plag_index]:
+        #       # Check why is this happening.
+        #       pdb.set_trace()
+        #     arr_overlap[plag_index] = overlap
+        #   else: 
+        #     continue
+    
