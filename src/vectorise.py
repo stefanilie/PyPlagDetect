@@ -159,7 +159,9 @@ class VectorAnaliser:
         cosine_array=[]
         sent_count = len(windows)
 
-        for window in windows:
+        print "\nComputing cosine_similarity"
+        for index, window in enumerate(windows):
+            Helper.print_progress(index, len(windows))
             cs = dot(window, document)/(norm(window)*norm(document))
             cs_sum+=cs
             cosine_array.append(cs)
@@ -231,13 +233,13 @@ class VectorAnaliser:
         # check if tokenized is done.
         if not len(self.tokenized) and not should_tokenize_corpuses:
             self.tokenized = Helper.read_dump(file_name)
-            dist_husige_token = FreqDist(self.tokenized)
+            # dist_husige_token = FreqDist(self.tokenized)
         elif not len(self.tokenized) and should_tokenize_corpuses:
             self.tokenize_corpuses(file_name)
 
         # Tokenizing suspicious corpus and getting most common from HUGE corpus.
         files = corpus.fileids()
-        self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
+        # self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
         
         # Most common word in a big corpus.
         most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
@@ -245,15 +247,21 @@ class VectorAnaliser:
         # temporary value for k.
         # will be changed after developing a learning algorithm.
         k=coeficient
+        arr_mean_precision = []
+        arr_mean_recall = []
+        arr_mean_f1 = []
         for file_item in files:
             windows_total = []
             doc_mean_vector = []
-            arr_mean_precision = []
-            arr_mean_recall = []
-            arr_mean_f1 = []
             dict_all_sentences = {} # used to save all the windows sent for analization.
             dict_offset_index = {} # used for saving the start offset and lenght of each window.
             offset_counter = 0
+            self.arr_plag_offset = []
+            self.arr_suspect_offset = []
+            self.arr_suspect_overlap = []
+            self.arr_cosine_similarity = []
+            self.mean = 0
+            self.standard_deviation = 0
 
             suspicious_freq_dist = Helper.tokenize_file(corpus, self.stop_words, file_item, True)
 
@@ -262,7 +270,7 @@ class VectorAnaliser:
             
             # computing the document mean vector
             doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist)
-            
+            print "\n==========\nanalizing %s" % (file_item)
             for index, sentence in enumerate(sentences):
                 """
                 Window is represented by all k+1 items.
@@ -277,6 +285,7 @@ class VectorAnaliser:
                 else:
                     arr_sentences = sentences[index-k/2:index+k/2]                    
 
+                Helper.print_progress(index, len(sentences))
                 toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist)
                 windows_total.append(toAppend)
                 
@@ -285,6 +294,7 @@ class VectorAnaliser:
                 new_offset = len(self.md.detokenize(sentence))
                 offset_counter += new_offset
                 dict_offset_index[index] = [offset_counter, new_offset]
+
 
             # compute cosine similarity for all windows plus mean
             self.compute_cosine_similarity_array(windows_total, doc_mean_vector)  
@@ -295,21 +305,35 @@ class VectorAnaliser:
             arr_suspect_chunks = self.get_suspect_index(sentences)
             self.compare_with_xml(file_item, dict_offset_index, arr_suspect_chunks)
 
-            if self.arr_plag_offset:
+            # if self.arr_plag_offset:
+            recall = 0
+            precision = 0
+            f1 = 0
+            if len(self.arr_plag_offset) == 0 and len(self.arr_suspect_offset) == 0:
+                arr_mean_recall.append(1)
+                arr_mean_precision.append(1)
+                arr_mean_f1.append(1)
+                print "\n%s precision: " % (file_item), 1
+                print "%s recall: " % (file_item), 1
+                print "%s f1: " % (file_item), 1
+            else: 
                 recall = Helper.precision(self.arr_overlap, self.arr_plag_offset)
                 precision = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
                 f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
-                print "%s precision: " % (file_item), precision
-                print "%s recall: " % (file_item), recall
-                print "%s f1: " % (file_item), f1
 
                 arr_mean_recall.append(recall)
                 arr_mean_precision.append(precision)
                 arr_mean_f1.append(f1)
+            
+                print "\n%s precision: " % (file_item), precision
+                print "%s recall: " % (file_item), recall
+                print "%s f1: " % (file_item), f1
+            # else:
+            #     print "\nNo plagiate from xml for %s" % (file_item)
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
         pdb.set_trace()
-        print "============TOTAL================="
+        print "\n============TOTAL================="
         print "precision: ", np.mean(np.array(arr_mean_precision))
         print "recall: ", np.mean(np.array(arr_mean_recall))
         print "f1: ", np.mean(np.array(arr_mean_f1))

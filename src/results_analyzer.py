@@ -124,9 +124,12 @@ class ResultsAnalyzer:
     '''
     Compares only the offsets and tells how many chars were detected.
     '''
+    if len(arr_plag_offset) == 0 or len(arr_suspect_offset) == 0:
+      return 0, 0
+
     arr_overlap = [0] * len(arr_plag_offset)
     arr_suspect_overlap = [0] * len(arr_suspect_offset)
-
+    
     for suspect_index, suspect_interval in enumerate(arr_suspect_offset):
       for plag_index, plag_interval in enumerate(arr_plag_offset):
         overlap = Helper.get_overlap(suspect_interval, plag_interval)

@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 import pdb
 import os
+import sys
 import pickle
 import numpy as np
 from numpy import dot
@@ -274,6 +276,8 @@ class Helper:
         tokenized_dump = pickle.load(tokenized_file)
         tokenized_file.close()
 
+        os.chdir(SUSPICIOUS)
+
         return tokenized_dump
 
     '''
@@ -304,9 +308,12 @@ class Helper:
     @staticmethod
     def stddev(sent_array, cosine_similarity_array, mean):
         sum=0
+        print "\nComputing sttdev"
         for index, sent in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
             # TODO: check to see .sum methid f  rom numpy
+            Helper.print_progress(index, len(sent_array))
+    
             sum += np.square(np.array(cosine_similarity_array[index]) - np.array(mean))
         return np.sqrt(np.true_divide(1, len(sent_array))*sum)
             
@@ -327,6 +334,9 @@ class Helper:
         true positive/actual results
         '''
         s=0
+        if len(arr_plag_offset) == 0:
+            pdb.set_trace()
+            return 0
         for index, plag_interval in enumerate(arr_plag_offset):
             plagiarized_chars = plag_interval[1]-plag_interval[0]
             s += np.true_divide(arr_overlap[index], plagiarized_chars)
@@ -339,8 +349,11 @@ class Helper:
         '''
         s=0
         # check here if sus.offset has same length ass sus.overlap 
+        if len(arr_suspect_offset) == 0:
+            pdb.set_trace()
+            return 0
         for index, suspect_interval in enumerate(arr_suspect_offset):
-            suspect_chars = arr_suspect_offset[index][1]-arr_suspect_offset[index][0]
+            suspect_chars = suspect_interval[1]-suspect_interval[0]
             s += np.true_divide(arr_suspect_overlap[index], suspect_chars)
         return np.true_divide(s, len(arr_suspect_offset))
 
@@ -352,5 +365,30 @@ class Helper:
         if precision and recall :
             f1 = np.true_divide(2*precision*recall, precision+recall)
             return f1
+        else: 
+            return 0
+    
+    # Print iterations progress
+    @staticmethod
+    # Print iterations progress
+    def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
+        """
+        Call in a loop to create terminal progress bar
+        @params:
+            iteration   - Required  : current iteration (Int)
+            total       - Required  : total iterations (Int)
+            prefix      - Optional  : prefix string (Str)
+            suffix      - Optional  : suffix string (Str)
+            decimals    - Optional  : positive number of decimals in percent complete (Int)
+            bar_length  - Optional  : character length of bar (Int)
+        """
+        str_format = "{0:." + str(decimals) + "f}"
+        percents = str_format.format(100 * (iteration / float(total)))
+        filled_length = int(round(bar_length * iteration / float(total)))
+        bar = '█' * filled_length + '-' * (bar_length - filled_length)
 
-            
+        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+
+        if iteration == total:
+            sys.stdout.write('\n')
+        sys.stdout.flush()
