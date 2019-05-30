@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 import pdb
 import os
+import sys
 import pickle
 import numpy as np
 from numpy import dot
@@ -157,6 +159,14 @@ class Helper:
     def compute_TF(term, tokenized_document):
         return 1 + log(tokenized_document.count(term))
 
+    @staticmethod
+    def get_overlap(a, b):
+      '''
+      Computes the overlap of the provided intervals.
+      Returns number of shared items.
+      '''
+      return max(0, min(a[1], b[1]) - max(a[0], b[0]))
+
     '''
     Computes the Inverse Term Frequency (IDF) coeficient.
     IDF = log(Nr of Docs in the Corpus / Nr of Docs in which the word appears).
@@ -266,6 +276,8 @@ class Helper:
         tokenized_dump = pickle.load(tokenized_file)
         tokenized_file.close()
 
+        os.chdir(SUSPICIOUS)
+
         return tokenized_dump
 
     '''
@@ -296,9 +308,12 @@ class Helper:
     @staticmethod
     def stddev(sent_array, cosine_similarity_array, mean):
         sum=0
+        print "\nComputing sttdev"
         for index, sent in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
-            # TODO: check to see .sum methid from numpy
+            # TODO: check to see .sum methid f  rom numpy
+            Helper.print_progress(index, len(sent_array))
+    
             sum += np.square(np.array(cosine_similarity_array[index]) - np.array(mean))
         return np.sqrt(np.true_divide(1, len(sent_array))*sum)
             
@@ -313,10 +328,67 @@ class Helper:
     def trigger_suspect(cosine_similarity_value, mean, stddev):
         return cosine_similarity_value < mean - e*stddev
         
+    @staticmethod
+    def precision(arr_overlap, arr_plag_offset):
+        '''
+        true positive/actual results
+        '''
+        s=0
+        if len(arr_plag_offset) == 0:
+            pdb.set_trace()
+            return 0
+        for index, plag_interval in enumerate(arr_plag_offset):
+            plagiarized_chars = plag_interval[1]-plag_interval[0]
+            s += np.true_divide(arr_overlap[index], plagiarized_chars)
+        return np.true_divide(s, len(arr_plag_offset))
+
+    @staticmethod
+    def recall(arr_suspect_overlap, arr_suspect_offset):
+        '''
+        true positive / predicted results
+        '''
+        s=0
+        # check here if sus.offset has same length ass sus.overlap 
+        if len(arr_suspect_offset) == 0:
+            pdb.set_trace()
+            return 0
+        for index, suspect_interval in enumerate(arr_suspect_offset):
+            suspect_chars = suspect_interval[1]-suspect_interval[0]
+            s += np.true_divide(arr_suspect_overlap[index], suspect_chars)
+        return np.true_divide(s, len(arr_suspect_offset))
+
     # @staticmethod
-    # def precision(arr_detected_passages, arr_detected_char_count):
-    #     sum=0
-    #     S = len(arr_passages) #number of passages
-    #     for pasage in arr_passages:
-            
-            
+    # def accuracy(arr_overlap, )
+
+    @staticmethod
+    def granularity_f1(precision, recall, arr_overlap):
+        if precision and recall :
+            f1 = np.true_divide(2*precision*recall, precision+recall)
+            return f1
+        else: 
+            return 0
+    
+    # Print iterations progress
+    @staticmethod
+    # Print iterations progress
+    def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
+        """
+        Call in a loop to create terminal progress bar
+        @params:
+            iteration   - Required  : current iteration (Int)
+            total       - Required  : total iterations (Int)
+            prefix      - Optional  : prefix string (Str)
+            suffix      - Optional  : suffix string (Str)
+            decimals    - Optional  : positive number of decimals in percent complete (Int)
+            bar_length  - Optional  : character length of bar (Int)
+        """
+        str_format = "{0:." + str(decimals) + "f}"
+        percents = str_format.format(100 * (iteration / float(total)))
+        filled_length = int(round(bar_length * iteration / float(total)))
+        bar = '█' * filled_length + '-' * (bar_length - filled_length)
+
+        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+
+        if iteration == total:
+            sys.stdout.write('\n')
+        sys.stdout.flush()
