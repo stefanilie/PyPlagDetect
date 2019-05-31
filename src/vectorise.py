@@ -68,13 +68,15 @@ class VectorAnaliser:
         asl = [0] * len(sentences) # average sentence length
         awps = [0] * len(sentences) # average words per sentence
         hapax = 0 # hapax legomena value
+        awd =  0 # average word diversity (no unique words/no words)
         toReturn = []
         
 
         flat_sent = flatten(sentences)
         fdist = FreqDist(flat_sent)
         hapax = np.true_divide(len(fdist.hapaxes()), len(flat_sent))
-
+        awd = np.true_divide(len(fdist), len(flat_sent))
+        
         # computing array for all POS stored in objects
         # each object represents a sentence.
         arr_tagged_pos_per_sent = self.compute_POS(sentences)
@@ -99,6 +101,8 @@ class VectorAnaliser:
                 awl.append(len(word))
                 asl[index] += len(word)
             awps[index] = len(words)
+            # Check awd is updating well with all the words from the sentece.
+            pdb.set_trace()
 
             
         awf = Helper.normalize_vector([awf])
@@ -111,6 +115,7 @@ class VectorAnaliser:
         toReturn.append(np.average(asl))
         toReturn.append(np.average(awps))
         toReturn.append(hapax)
+        toReturn.append(awd)
         toReturn.extend(awf)
         toReturn.extend(pcf)
         toReturn.extend(stp)
