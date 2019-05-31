@@ -23,9 +23,8 @@ class Helper:
     '''
     Constructor
     '''
-    def __init__(self, corpus, tagger, stopWords):
+    def __init__(self, corpus, stopWords):
         self.corpus = corpus
-        self.tagger = tagger
         self.stopWords = stopWords
 
     '''

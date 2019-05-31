@@ -21,9 +21,9 @@ class VectorAnaliser:
     """
     Constructor
     """
-    def __init__(self, corpus, tagger, stop_words):
+    def __init__(self, corpus, stop_words):
         self.corpus = corpus
-        self.tagger = tagger
+        # self.tagger = tagger
         self.stop_words = stop_words
         self.tokenized = []
         self.suspect_corpus_tokenized = None
