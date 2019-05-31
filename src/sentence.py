@@ -1,4 +1,4 @@
-from helper import Helper
+from src.helper import Helper
 from collections import Counter
 from nltk.probability import FreqDist
 from textstat.textstat import textstat
@@ -104,8 +104,8 @@ class SentenceAnalyser:
                     'sentence_number': str(index),
                     'feature_percents': dict_sent_percents
                 })
-                # print "\n\===============Sentence "+str(index)+"===============\n"
-                # print arr_all_sentences
+                # print("\n\===============Sentence "+str(index)+"===============\n")
+                # print(arr_all_sentences)
 
             dict_doc_percents = Helper.get_feature_percentage(relative_to=words_in_doc,
             feature=dict(counter_doc_tags))
@@ -165,7 +165,7 @@ class SentenceAnalyser:
                         'plagiarized_sentence': False
                     })
                 ratio = doc_detected_words/float(item["word_count"])
-                print "\nSentenceDocument "+str(index)+":\nRatio: " + str(ratio)
+                print("\nSentenceDocument "+str(index)+":\nRatio: " + str(ratio))
             if ratio > 5:
                 item.update({
                     "plagiarized_doc": True,

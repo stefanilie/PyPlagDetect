@@ -4,10 +4,9 @@ import xml.etree.ElementTree as ET
 import numpy as np
 
 from os import listdir
-from compiler.ast import flatten
 from os.path import isfile, join
 from src.config import SUSPICIOUS
-from helper import Helper
+from src.helper import Helper
 
 
 class ResultsAnalyzer:
@@ -49,7 +48,7 @@ class ResultsAnalyzer:
           })
         return arr_offset_length
       except:
-        print "File %s not present in folder" %(root_file_name)
+        print("File %s not present in folder" %(root_file_name))
 
 
   def get_plagiarised(self, xml_data):
@@ -94,7 +93,7 @@ class ResultsAnalyzer:
         for item in chunk:
           length += dict_offset_index[item][-1]
         arr_passages.append(self.read_by_offset(offset, length))
-    return flatten(arr_passages)
+    return Helper.flatten(arr_passages)
 
   def chunks_to_offset(self, dict_offset_index, chunks):
     '''

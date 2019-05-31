@@ -1,6 +1,5 @@
-from helper import Helper
+from src.helper import Helper
 from collections import Counter
-from compiler.ast import flatten
 from nltk.probability import FreqDist
 from textstat.textstat import textstat
 
@@ -60,7 +59,7 @@ class ParagraphAnalyser:
                 # TODO: try to change paragraph with clean_paragraph.
                 clean_paragraph = Helper.get_difference(paragraph, self.stopWords)
 
-                fdist_paragraph = FreqDist(flatten(paragraph))
+                fdist_paragraph = FreqDist(Helper.flatten(paragraph))
                 percentage = Helper.get_percentage(words=paragraph, percentage=0.66)
                 most_freq_para = fdist_paragraph.most_common(percentage)
                 least_freq_para = fdist_paragraph.most_common()[-percentage]
@@ -75,8 +74,8 @@ class ParagraphAnalyser:
                 '''
                 Number of syllables and characters in the paragraph.
                 '''
-                para_syllable_count = textstat.syllable_count(str(flatten(paragraph)))
-                para_chars_count = textstat.char_count(str(flatten(paragraph)))
+                para_syllable_count = textstat.syllable_count(str(Helper.flatten(paragraph)))
+                para_chars_count = textstat.char_count(str(Helper.flatten(paragraph)))
 
                 for sentence in paragraph:
                     para_words_count += len(sentence)
@@ -125,7 +124,7 @@ class ParagraphAnalyser:
                     'paragraph_number': str(index),
                     'feature_percents': dict_para_percents
                 })
-                print "\n\===============Paragraph "+str(index)+"===============\n"
+                print("\n\===============Paragraph "+str(index)+"===============\n")
                 pretty_printer = pprint.PrettyPrinter(indent=2)
                 pretty_printer.pprint(arr_all_paragraphs)
 
@@ -206,7 +205,7 @@ class ParagraphAnalyser:
                         'plagiarized_paragraph': False
                     })
                 ratio = doc_detected_words*100/float(item["word_count"])
-            print "\nParagraphDocument "+str(index)+":\nRatio: " + str(ratio)
+            print("\nParagraphDocument "+str(index)+":\nRatio: " + str(ratio))
             if ratio > 5:
                 item.update({
                     "plagiarized_doc": True,

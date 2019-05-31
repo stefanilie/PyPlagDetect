@@ -10,7 +10,6 @@ from itertools import groupby
 from numpy.linalg import norm
 from nltk import word_tokenize
 from operator import itemgetter
-from compiler.ast import flatten
 from nltk.probability import FreqDist
 from src.config import SUSPICIOUS, DUMPS
 from sklearn.preprocessing import normalize
@@ -27,6 +26,25 @@ class Helper:
         self.corpus = corpus
         self.tagger = tagger
         self.stopWords = stopWords
+
+
+    @staticmethod
+    def flatten(alist):
+        '''
+        No Python hacks in this implementation. Also, this accepts many levels of nested lists.
+        The limit is in the number of recursive calls.
+        @alist: A tuple or list.
+        @return: A flat list with all elements of @alist and its nested lists.
+        Complexity: `Θ(n)`, where `n` is the number of elements of @alist
+        plus the number of elements of all nested lists.
+        '''
+        new_list = []
+        for item in alist:
+            if isinstance(item, (list, tuple)):
+                new_list.extend(Helper.flatten(item))
+            else:
+                new_list.append(item)
+        return new_list
 
     '''
     Returns the exact number of words based on the percentage needed.
@@ -47,8 +65,8 @@ class Helper:
     '''
     @staticmethod
     def get_intersection(list1, list2):
-        list1 = flatten(list1)
-        list2 = flatten(list2)
+        list1 = Helper.flatten(list1)
+        list2 = Helper.flatten(list2)
 
         return list(set(list1).intersection(set(list2)))
 
@@ -60,8 +78,8 @@ class Helper:
     '''
     @staticmethod
     def get_difference(list1, list2):
-        list1 = flatten(list1)
-        list2 = flatten(list2)
+        list1 = Helper.flatten(list1)
+        list2 = Helper.flatten(list2)
 
         return list(set(list1).difference(set(list2)))
 
@@ -207,18 +225,18 @@ class Helper:
     '''
     @staticmethod
     def tokenize_corpus(corpus, stopWords, cathegorized=False, with_stop_words=False):
-        print "==========="
-        print "Tokenizeing ", corpus
+        print("===========")
+        print("Tokenizeing ", corpus)
         tokenized = []
         if not cathegorized: 
             for id in corpus.fileids():
-                print "1-------file------"
-                print id
+                print("1-------file------")
+                print(id)
                 raw = corpus.raw(id)
                 tokenized += word_tokenize(raw)        
         else:
-            print "2-------cathegory------"
-            print type(corpus)
+            print("2-------cathegory------")
+            print(type(corpus))
             if type(corpus) is LazyCorpusLoader:
                 tokenized += corpus.words()
             else:
@@ -287,7 +305,7 @@ class Helper:
     @staticmethod
     def find_consecutive_numbers(arr):
         toReturn = []
-        for k, g in groupby(enumerate(arr), lambda (i, x): i-x):
+        for k, g in groupby(enumerate(arr), lambda i, x: i-x):
             toReturn.append(map(itemgetter(1), g))
         return toReturn
 
@@ -308,7 +326,7 @@ class Helper:
     @staticmethod
     def stddev(sent_array, cosine_similarity_array, mean):
         sum=0
-        print "\nComputing sttdev"
+        print("\nComputing sttdev")
         for index, sent in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
             # TODO: check to see .sum methid f  rom numpy
@@ -368,9 +386,9 @@ class Helper:
         else: 
             return 0
     
-    # Print iterations progress
+    # Print(iterations progress)
     @staticmethod
-    # Print iterations progress
+    # Print(iterations progress)
     def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
         """
         Call in a loop to create terminal progress bar

@@ -26,7 +26,7 @@ def downloadNLTKResources():
     nltk.download('all')
 
 def exitWithMessage(message): 
-    print message
+    print(message)
     sys.exit()
 
 def main():
@@ -65,15 +65,15 @@ def main():
 
             # basic menu
             while(not isReady):
-                print "1. Tokenize and export dump via Pickle"
-                print "2. Import using Pickle"
+                print("1. Tokenize and export dump via Pickle")
+                print("2. Import using Pickle")
                 try:
-                    decision = raw_input("Choose action: ")
+                    decision = input("Choose action: ")
                     decision = int(decision)
                 except ValueError:
-                    print "Option '{0}' doesn't exist.".format(decision)
+                    print("Option '{0}' doesn't exist.".format(decision))
                 if decision not in [1, 2]:
-                    print "Option '{0}' doesn't exist.".format(decision)
+                    print("Option '{0}' doesn't exist.".format(decision))
                 else:
                     isReady = True
             if decision==1:
@@ -84,7 +84,7 @@ def main():
                 vector_analizer = VectorAnaliser(corpusReader, tagger, stopWords)
                 vector_analizer.vectorise(corpusReader)
             else:
-                print "Option '{0}' doesn't exist.".format(decision)
+                print("Option '{0}' doesn't exist.".format(decision))
 
 
         # Analizing paragraphs for features and outputting an object.
@@ -105,7 +105,7 @@ def main():
                         "ratio": 0
 
                     })
-        # print "\n\===============Data after feature classification===============\n"
+        # print("\n\===============Data after feature classification===============\n")
         # pretty_printer.pprint(feature_arr)
 
         if mode == "sent" or mode == "all":
@@ -127,18 +127,18 @@ def main():
 
         if mode == "para" or mode == "all":
             for index, item in enumerate(para_ratios):
-                print "for index ", index , ""
+                print("for index ", index , "")
                 ratio = str(float(item["ratio"])+float(sent_ratios[index]["ratio"])/2.0)
                 if ratio > 0:
                     if item["ratio"]>0:
                         if sent_ratios[index]["ratio"]>0:
-                            print "Document "+str(index) + " is plagiarised with an average ratio of: " + ratio
+                            print("Document "+str(index) + " is plagiarised with an average ratio of: " + ratio)
                         else:
-                            print "Document "+str(index) + " is plagiarised with an average ratio of (sentence_ratio: 0): " + ratio
+                            print("Document "+str(index) + " is plagiarised with an average ratio of (sentence_ratio: 0): " + ratio)
                     else:
                         if sent_ratios[index]["ratio"]>0:
-                            print "Document "+str(index) + " is plagiarised with an average ratio of (para_ratio: 0): " + ratio
+                            print("Document "+str(index) + " is plagiarised with an average ratio of (para_ratio: 0): " + ratio)
                 else:
-                    print "Document is not plagiarised."
+                    print("Document is not plagiarised.")
 
 if __name__ == "__main__": main()

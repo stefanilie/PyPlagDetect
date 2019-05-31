@@ -6,10 +6,9 @@ import numpy as np
 from math import log
 from numpy import dot
 from nltk import pos_tag
-from helper import Helper
+from src.helper import Helper
 from numpy.linalg import norm
 from collections import Counter
-from compiler.ast import flatten
 from nltk.probability import FreqDist
 from sacremoses import MosesDetokenizer
 from nltk import sent_tokenize, word_tokenize
@@ -71,7 +70,7 @@ class VectorAnaliser:
         toReturn = []
         
 
-        flat_sent = flatten(sentences)
+        flat_sent = Helper.flatten(sentences)
         fdist = FreqDist(flat_sent)
         hapax = np.true_divide(len(fdist.hapaxes()), len(flat_sent))
 
@@ -159,7 +158,7 @@ class VectorAnaliser:
         cosine_array=[]
         sent_count = len(windows)
 
-        print "\nComputing cosine_similarity"
+        print("\nComputing cosine_similarity")
         for index, window in enumerate(windows):
             Helper.print_progress(index, len(windows))
             cs = dot(window, document)/(norm(window)*norm(document))
@@ -196,7 +195,7 @@ class VectorAnaliser:
         for index, cs in enumerate(self.arr_cosine_similarity):
             isSuspect = Helper.trigger_suspect(cs, self.mean, self.standard_deviation)
             
-            # print "index: %s, is suspect: %s" %(str(index), str(isSuspect))
+            # print("index: %s, is suspect: %s" %(str(index), str(isSuspect)))
             suspect_sentences.append(index) if isSuspect else False
             
             # compute number of chars in one suspect sentece
@@ -270,7 +269,7 @@ class VectorAnaliser:
             
             # computing the document mean vector
             doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist)
-            print "\n==========\nanalizing %s" % (file_item)
+            print("\n==========\nanalizing %s" % (file_item))
             for index, sentence in enumerate(sentences):
                 """
                 Window is represented by all k+1 items.
@@ -313,9 +312,9 @@ class VectorAnaliser:
                 arr_mean_recall.append(1)
                 arr_mean_precision.append(1)
                 arr_mean_f1.append(1)
-                print "\n%s precision: " % (file_item), 1
-                print "%s recall: " % (file_item), 1
-                print "%s f1: " % (file_item), 1
+                print("\n%s precision: " % (file_item), 1)
+                print("%s recall: " % (file_item), 1)
+                print("%s f1: " % (file_item), 1)
             else: 
                 recall = Helper.precision(self.arr_overlap, self.arr_plag_offset)
                 precision = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
@@ -325,18 +324,18 @@ class VectorAnaliser:
                 arr_mean_precision.append(precision)
                 arr_mean_f1.append(f1)
             
-                print "\n%s precision: " % (file_item), precision
-                print "%s recall: " % (file_item), recall
-                print "%s f1: " % (file_item), f1
+                print("\n%s precision: " % (file_item), precision)
+                print("%s recall: " % (file_item), recall)
+                print("%s f1: " % (file_item), f1)
             # else:
-            #     print "\nNo plagiate from xml for %s" % (file_item)
+            #     print("\nNo plagiate from xml for %s" % (file_item))
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
         pdb.set_trace()
-        print "\n============TOTAL================="
-        print "precision: ", np.mean(np.array(arr_mean_precision))
-        print "recall: ", np.mean(np.array(arr_mean_recall))
-        print "f1: ", np.mean(np.array(arr_mean_f1))
+        print("\n============TOTAL=================")
+        print("precision: ", np.mean(np.array(arr_mean_precision)))
+        print("recall: ", np.mean(np.array(arr_mean_recall)))
+        print("f1: ", np.mean(np.array(arr_mean_f1)))
 
 
  
