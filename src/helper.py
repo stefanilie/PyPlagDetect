@@ -335,7 +335,6 @@ class Helper:
         '''
         s=0
         if len(arr_plag_offset) == 0:
-            pdb.set_trace()
             return 0
         for index, plag_interval in enumerate(arr_plag_offset):
             plagiarized_chars = plag_interval[1]-plag_interval[0]
@@ -350,7 +349,6 @@ class Helper:
         s=0
         # check here if sus.offset has same length ass sus.overlap 
         if len(arr_suspect_offset) == 0:
-            pdb.set_trace()
             return 0
         for index, suspect_interval in enumerate(arr_suspect_offset):
             suspect_chars = suspect_interval[1]-suspect_interval[0]

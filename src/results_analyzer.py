@@ -30,7 +30,7 @@ class ResultsAnalyzer:
     arr_offset_length = []
     fileids = self.get_files_in_folder()
     if self.file_name not in fileids:
-      raise Exception("File %s not present in folder" %(self.file_name))
+      raise Exception("\nFile %s not present in folder" %(self.file_name))
     else:
       try:
         current_directory=os.getcwd()
@@ -39,7 +39,7 @@ class ResultsAnalyzer:
         root_file_name = self.file_name.split('.')[0]
         root_file_name += '.xml'
         if root_file_name not in fileids:
-          raise Exception("File %s not present in folder" %(root_file_name))
+          raise Exception("\nFile %s not present in folder" %(root_file_name))
         tree = ET.parse(root_file_name)
         root = tree.getroot()
         for child in root:
@@ -49,7 +49,7 @@ class ResultsAnalyzer:
           })
         return arr_offset_length
       except:
-        print "File %s not present in folder" %(root_file_name)
+        print "\nFile %s not present in folder" %(root_file_name)
 
 
   def get_plagiarised(self, xml_data):
@@ -58,7 +58,7 @@ class ResultsAnalyzer:
     based on the provided offset and length.
     '''
     if self.file_name not in self.corpus.fileids():
-      raise Exception("File %s not present in corpus" %(self.file_name))
+      raise Exception("\nFile %s not present in corpus" %(self.file_name))
     else:
       arr_plagiarised = []
       for xml_line in xml_data:

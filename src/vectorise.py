@@ -79,7 +79,7 @@ class VectorAnaliser:
         fdist = FreqDist(flat_sent)
         hapax = np.true_divide(len(fdist.hapaxes()), len(flat_sent))
         awd = np.true_divide(len(fdist), len(flat_sent))
-        
+
         # computing array for all POS stored in objects
         # each object represents a sentence.
         arr_tagged_pos_per_sent = self.compute_POS(sentences)
@@ -104,11 +104,7 @@ class VectorAnaliser:
                 awl.append(len(word))
                 asl[index] += len(word)
                 aspw.append(len(self.dic.inserted(word).split('-')))
-                # check if dic.inserted actually separates well and splits acccordigly
-                pdb.set_trace()
             awps[index] = len(words)
-            # Check awd is updating well with all the words from the sentece.
-            pdb.set_trace()
 
             
         awf = Helper.normalize_vector([awf])
