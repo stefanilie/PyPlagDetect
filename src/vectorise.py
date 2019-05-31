@@ -1,5 +1,6 @@
 import pdb
 import pickle
+import pyphen
 import string
 import numpy as np
 
@@ -34,6 +35,7 @@ class VectorAnaliser:
         self.arr_plag_offset = []
         self.arr_suspect_offset = []
         self.arr_suspect_overlap = []
+        self.dic = pyphen.Pyphen(lang='en_GB')
 
     def tokenize_corpuses(self, file_name):
         """
@@ -69,6 +71,7 @@ class VectorAnaliser:
         awps = [0] * len(sentences) # average words per sentence
         hapax = 0 # hapax legomena value
         awd =  0 # average word diversity (no unique words/no words)
+        aspw = [] #average syllable count per word
         toReturn = []
         
 
@@ -100,6 +103,9 @@ class VectorAnaliser:
                     prn[item_index] = 1
                 awl.append(len(word))
                 asl[index] += len(word)
+                aspw.append(len(self.dic.inserted(word).split('-')))
+                # check if dic.inserted actually separates well and splits acccordigly
+                pdb.set_trace()
             awps[index] = len(words)
             # Check awd is updating well with all the words from the sentece.
             pdb.set_trace()
@@ -114,6 +120,7 @@ class VectorAnaliser:
         toReturn.append(np.average(awl))
         toReturn.append(np.average(asl))
         toReturn.append(np.average(awps))
+        toReturn.append(np.average(aspw))
         toReturn.append(hapax)
         toReturn.append(awd)
         toReturn.extend(awf)
