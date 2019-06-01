@@ -54,23 +54,26 @@ def main():
     print "Welcome to PyPlagDetect!"
     print "Please choose an action:"
     while(not isReady):
-        print "1. Tokenize and export dump via Pickle"
-        print "2. Import using Pickle"
+        print "1. Extract and tokenize wikipedia dump"
+        print "2. Tokenize and export dump via Pickle"
+        print "3. Import using Pickle"
         try:
             decision = raw_input("Choose action: ")
             decision = int(decision)
         except ValueError:
             print "Option '{0}' doesn't exist.".format(decision)
-        if decision not in [1, 2]:
+        if decision not in [1, 2, 3]:
             print "Option '{0}' doesn't exist.".format(decision)
         else:
             isReady = True
 
-    if decision==1:
+    if decision == 1:
+        # exectute tokenization of wiki.
+    elif decision==2:
         trainingCorpusReader=PlaintextCorpusReader(TRAINING, '.*\.txt')
         vector_analizer = VectorAnaliser(trainingCorpusReader, stopWords)
         vector_analizer.vectorise(corpusReader, should_tokenize_corpuses=True)
-    elif decision==2:
+    elif decision==3:
         vector_analizer = VectorAnaliser(corpusReader, stopWords)
         vector_analizer.vectorise(corpusReader)
     else:
