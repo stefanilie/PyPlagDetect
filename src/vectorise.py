@@ -50,7 +50,7 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(self.corpus, self.stop_words)
         Helper.create_dump(self.tokenized, file_name)
 
-    def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist):
+    def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
         """
         Main method for computing features of the text.
         Iterates words in sentences and computes:
@@ -87,10 +87,14 @@ class VectorAnaliser:
 
         # iterating sentences and then words in them
         for index, words in enumerate(sentences):
+            if verbose:
+                Helper.print_progress(index, len(sentences))
             for word in words:
                 word_freq = suspicious_freq_dist[word]
-                # if word not in  suspicious_freq_dist.keys():
-                #     continue
+                if word not in  suspicious_freq_dist.keys():
+                    # this is for some weird cases where we have words that
+                    # couldn't be tokenized.
+                    continue
                 item_index = suspicious_freq_dist.keys().index(word)
 
                 # computing number of occurances 
@@ -125,6 +129,7 @@ class VectorAnaliser:
         toReturn.append(hapax)
         toReturn.append(fre)
         toReturn.append(awd)
+
         toReturn.extend(awf)
         toReturn.extend(pcf)
         toReturn.extend(stp)
@@ -282,8 +287,10 @@ class VectorAnaliser:
             sentences = [word_tokenize(sent) for sent in sent_tokenize(corpus.raw(fileids=file_item))]
             
             # computing the document mean vector
-            doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist)
             print "\n==========\nanalizing %s" % (file_item)
+            print "\nComputing reference_vector"
+            doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist, True)
+            print "\nComputing features"
             for index, sentence in enumerate(sentences):
                 """
                 Window is represented by all k+1 items.
@@ -299,7 +306,7 @@ class VectorAnaliser:
                     arr_sentences = sentences[index-k/2:index+k/2]                    
 
                 Helper.print_progress(index, len(sentences))
-                toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist)
+                toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist, False)
                 windows_total.append(toAppend)
                 
                 dict_all_sentences[index] = sentence
@@ -345,7 +352,6 @@ class VectorAnaliser:
             #     print "\nNo plagiate from xml for %s" % (file_item)
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
-        pdb.set_trace()
         print "\n============TOTAL================="
         print "precision: ", np.mean(np.array(arr_mean_precision))
         print "recall: ", np.mean(np.array(arr_mean_recall))
