@@ -4,7 +4,6 @@ import os
 import sys
 import pickle
 import numpy as np
-from numpy import dot
 from math import e, log
 from itertools import groupby
 from numpy.linalg import norm
@@ -366,9 +365,7 @@ class Helper:
         else: 
             return 0
     
-    # Print iterations progress
     @staticmethod
-    # Print iterations progress
     def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
         """
         Call in a loop to create terminal progress bar
@@ -390,3 +387,10 @@ class Helper:
         if iteration == total:
             sys.stdout.write('\n')
         sys.stdout.flush()
+
+    @staticmethod
+    def compute_flesch_reading_ease(words, syllables, sentences):
+        '''
+        Computes the Flesch reading ease.
+        '''
+        return 206.835-1.015 * (np.true_divide(words, sentences)) - 84.6 * (np.true_divide(syllables, words))

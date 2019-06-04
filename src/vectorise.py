@@ -72,6 +72,7 @@ class VectorAnaliser:
         hapax = 0 # hapax legomena value
         awd =  0 # average word diversity (no unique words/no words)
         aspw = [] #average syllable count per word
+        fre = 0 # flesch reading ease 
         toReturn = []
         
 
@@ -88,8 +89,8 @@ class VectorAnaliser:
         for index, words in enumerate(sentences):
             for word in words:
                 word_freq = suspicious_freq_dist[word]
-                if word not in  suspicious_freq_dist.keys():
-                    continue
+                # if word not in  suspicious_freq_dist.keys():
+                #     continue
                 item_index = suspicious_freq_dist.keys().index(word)
 
                 # computing number of occurances 
@@ -106,7 +107,10 @@ class VectorAnaliser:
                 aspw.append(len(self.dic.inserted(word).split('-')))
             awps[index] = len(words)
 
-            
+        words = np.sum(awps)
+        syllables = np.sum(aspw)
+        fre = Helper.compute_flesch_reading_ease(words, syllables, len(sentences))
+
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
         stp = Helper.normalize_vector([stp])
@@ -117,14 +121,15 @@ class VectorAnaliser:
         toReturn.append(np.average(asl))
         toReturn.append(np.average(awps))
         toReturn.append(np.average(aspw))
+        toReturn.append(np.average(awf))
         toReturn.append(hapax)
+        toReturn.append(fre)
         toReturn.append(awd)
         toReturn.extend(awf)
         toReturn.extend(pcf)
         toReturn.extend(stp)
         toReturn.extend(pos)
         toReturn.extend(prn)
-        # return np.array(Helper.normalize_vector([toReturn]))
 
         return Helper.normalize_vector([toReturn])
 
