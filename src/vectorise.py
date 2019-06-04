@@ -3,6 +3,7 @@ import pickle
 import pyphen
 import string
 import numpy as np
+import scipy.stats as sc
 
 from math import log
 from numpy import dot
@@ -73,6 +74,7 @@ class VectorAnaliser:
         awd =  0 # average word diversity (no unique words/no words)
         aspw = [] #average syllable count per word
         fre = 0 # flesch reading ease 
+        sha_entr = [] # shanon entropy value
         toReturn = []
         
 
@@ -109,11 +111,13 @@ class VectorAnaliser:
                 awl.append(len(word))
                 asl[index] += len(word)
                 aspw.append(len(self.dic.inserted(word).split('-')))
+                sha_entr.append(word_freq*log(word_freq, 2))
             awps[index] = len(words)
 
         words = np.sum(awps)
         syllables = np.sum(aspw)
         fre = Helper.compute_flesch_reading_ease(words, syllables, len(sentences))
+        sha_entr = sc.entropy(sha_entr, None, 2)
 
         awf = Helper.normalize_vector([awf])
         pcf = Helper.normalize_vector([pcf])
@@ -128,8 +132,9 @@ class VectorAnaliser:
         toReturn.append(np.average(awf))
         toReturn.append(hapax)
         toReturn.append(fre)
+        toReturn.append(sha_entr)
         toReturn.append(awd)
-
+        
         toReturn.extend(awf)
         toReturn.extend(pcf)
         toReturn.extend(stp)
