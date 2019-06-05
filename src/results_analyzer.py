@@ -125,7 +125,7 @@ class ResultsAnalyzer:
     Compares only the offsets and tells how many chars were detected.
     '''
     if len(arr_plag_offset) == 0 or len(arr_suspect_offset) == 0:
-      return 0, 0
+      return [], []
 
     arr_overlap = [0] * len(arr_plag_offset)
     arr_suspect_overlap = [0] * len(arr_suspect_offset)

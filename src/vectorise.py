@@ -242,7 +242,6 @@ class VectorAnaliser:
             self.arr_plag_offset = [[int(x['offset']), int(x['offset'])+int(x['length'])] for x in xml_data]
             self.arr_suspect_offset = result_analizer.chunks_to_offset(dict_offset_index, suspect_indexes)
 
-
             self.arr_overlap, self.arr_suspect_overlap = result_analizer.compare_offsets(self.arr_plag_offset, self.arr_suspect_offset)
 
 
@@ -342,8 +341,8 @@ class VectorAnaliser:
                 print "%s recall: " % (file_item), 1
                 print "%s f1: " % (file_item), 1
             else: 
-                recall = Helper.precision(self.arr_overlap, self.arr_plag_offset)
-                precision = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
+                precision = Helper.precision(self.arr_overlap, self.arr_plag_offset)
+                recall = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
                 f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
 
                 arr_mean_recall.append(recall)
