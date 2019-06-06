@@ -393,4 +393,6 @@ class Helper:
         '''
         Computes the Flesch reading ease.
         '''
-        return 206.835-1.015 * (np.true_divide(words, sentences)) - 84.6 * (np.true_divide(syllables, words))
+        reading_ease = 206.835-1.015 * (np.true_divide(words, sentences)) - 84.6 * (np.true_divide(syllables, words))
+        grade_level = 0.39 * (np.true_divide(words, sentences)) + 11.8 * (np.true_divide(syllables, words)) - 15.59
+        return reading_ease, grade_level

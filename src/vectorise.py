@@ -5,7 +5,7 @@ import string
 import numpy as np
 import scipy.stats as sc
 
-from math import log
+from math import log, floor
 from numpy import dot
 from nltk import pos_tag
 from helper import Helper
@@ -74,6 +74,7 @@ class VectorAnaliser:
         awd =  0 # average word diversity (no unique words/no words)
         aspw = [] #average syllable count per word
         fre = 0 # flesch reading ease 
+        gre = 0 # flesch kincaid grade level
         sha_entr = [] # shanon entropy value
         toReturn = []
         
@@ -92,6 +93,7 @@ class VectorAnaliser:
             if verbose:
                 Helper.print_progress(index, len(sentences))
             for word in words:
+                word = word.lower()
                 word_freq = suspicious_freq_dist[word]
                 if word not in  suspicious_freq_dist.keys():
                     # this is for some weird cases where we have words that
@@ -100,7 +102,9 @@ class VectorAnaliser:
                 item_index = suspicious_freq_dist.keys().index(word)
 
                 # computing number of occurances 
-                awf[item_index] = log(float(most_common_word_freq)/word_freq) / log(2)
+                # awf[item_index] = log(float(most_common_word_freq)/word_freq) / log(2)
+                # if self.tokenized[word.lower()]!=0:
+                awf[item_index] = floor(log(np.true_divide(most_common_word_freq, self.tokenized[word]))/log(2))
                 pcf[item_index] = fdist[word] if word in string.punctuation else 0
                 stp[item_index] = fdist[word] if word in self.stop_words else 0
                 pos[item_index] = arr_tagged_pos_per_sent[index][word]
@@ -116,7 +120,7 @@ class VectorAnaliser:
 
         words = np.sum(awps)
         syllables = np.sum(aspw)
-        fre = Helper.compute_flesch_reading_ease(words, syllables, len(sentences))
+        fre, gre = Helper.compute_flesch_reading_ease(words, syllables, len(sentences))
         sha_entr = sc.entropy(sha_entr, None, 2)
 
         awf = Helper.normalize_vector([awf])
@@ -132,6 +136,7 @@ class VectorAnaliser:
         toReturn.append(np.average(awf))
         toReturn.append(hapax)
         toReturn.append(fre)
+        toReturn.append(gre)
         toReturn.append(sha_entr)
         toReturn.append(awd)
         
@@ -167,7 +172,7 @@ class VectorAnaliser:
         """
         dict_pos={}
         for (word, pos) in tagged_sent:
-            dict_pos[word] = Helper.switch_pos(pos)
+            dict_pos[word.lower()] = Helper.switch_pos(pos)
         return dict_pos
 
     def compute_cosine_similarity_array(self, windows, document):
@@ -248,11 +253,13 @@ class VectorAnaliser:
         Main method for vectorising the corpus. 
         @param corpus:
         """
-        file_name = "tokenized.pickle"
+        # file_name = "tokenized.pickle"
+        file_name = "wiki.pickle"
        
         # check if tokenized is done.
         if not len(self.tokenized) and not should_tokenize_corpuses:
             self.tokenized = Helper.read_dump(file_name)
+
             # dist_husige_token = FreqDist(self.tokenized)
         elif not len(self.tokenized) and should_tokenize_corpuses:
             self.tokenize_corpuses(file_name)
@@ -262,7 +269,8 @@ class VectorAnaliser:
         # self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
         
         # Most common word in a big corpus.
-        most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
+        # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
+        most_common_word_freq = self.tokenized.most_common()[0][1]
 
         # temporary value for k.
         # will be changed after developing a learning algorithm.
