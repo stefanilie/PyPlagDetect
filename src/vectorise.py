@@ -125,6 +125,12 @@ class VectorAnaliser:
         pos = Helper.normalize_vector([pos])
         prn = Helper.normalize_vector([prn])
 
+        toReturn.append(np.average(awf))
+        toReturn.append(np.average(pcf))
+        toReturn.append(np.average(stp))
+        toReturn.append(np.average(pos))
+        toReturn.append(np.average(prn))
+
         toReturn.append(np.average(awl))
         toReturn.append(np.average(asl))
         toReturn.append(np.average(awps))
@@ -134,12 +140,6 @@ class VectorAnaliser:
         toReturn.append(fre)
         toReturn.append(sha_entr)
         toReturn.append(awd)
-        
-        toReturn.extend(awf)
-        toReturn.extend(pcf)
-        toReturn.extend(stp)
-        toReturn.extend(pos)
-        toReturn.extend(prn)
 
         return Helper.normalize_vector([toReturn])
 
