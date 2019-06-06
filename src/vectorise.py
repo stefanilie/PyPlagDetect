@@ -237,8 +237,6 @@ class VectorAnaliser:
         result_analizer = ResultsAnalyzer(self.corpus, file_item)
         xml_data = result_analizer.get_offset_from_xml()
         if xml_data:
-            # actual_plagiarised_passages = result_analizer.get_plagiarised(xml_data)
-            # detected_plagiarised_passages = self.md.detokenize(result_analizer.chunks_to_passages(dict_offset_index, suspect_indexes))
             self.arr_plag_offset = [[int(x['offset']), int(x['offset'])+int(x['length'])] for x in xml_data]
             self.arr_suspect_offset = result_analizer.chunks_to_offset(dict_offset_index, suspect_indexes)
 
@@ -334,12 +332,13 @@ class VectorAnaliser:
             precision = 0
             f1 = 0
             if len(self.arr_plag_offset) == 0 and len(self.arr_suspect_offset) == 0:
-                arr_mean_recall.append(1)
-                arr_mean_precision.append(1)
-                arr_mean_f1.append(1)
-                print "\n%s precision: " % (file_item), 1
-                print "%s recall: " % (file_item), 1
-                print "%s f1: " % (file_item), 1
+                # arr_mean_recall.append(1)
+                # arr_mean_precision.append(1)
+                # arr_mean_f1.append(1)
+                # print "\n%s precision: " % (file_item), 1
+                # print "%s recall: " % (file_item), 1
+                # print "%s f1: " % (file_item), 1
+                print "\n%s: No plagiarism detected and none existing" % (file_item)
             else: 
                 precision = Helper.precision(self.arr_overlap, self.arr_plag_offset)
                 recall = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
