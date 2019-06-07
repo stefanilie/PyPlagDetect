@@ -396,3 +396,69 @@ class Helper:
         reading_ease = 206.835-1.015 * (np.true_divide(words, sentences)) - 84.6 * (np.true_divide(syllables, words))
         grade_level = 0.39 * (np.true_divide(words, sentences)) + 11.8 * (np.true_divide(syllables, words)) - 15.59
         return reading_ease, grade_level
+
+    @staticmethod 
+    def setup_coca_dictionary():
+        '''
+        Using data from https://www.english-corpora.org/coca/, 
+        it adds the values that the wiki FreqDist doesn't contain.
+        Examples include 'a', 'i' or punctuation.
+        We decide which has to be mapped here based on the 0 value
+        they contain inside the wiki freq dist.
+        '''
+        return {
+            'a': 12953004,
+            'i': 5936716, 
+            ',': 33025640,
+            '.': 29239642,
+            ';': 1113520, 
+            ':': 4046651, 
+            '\'': 1239134, 
+            '/': 6574,
+            '!': 485059, 
+            '?': 2243206,
+            '\"': 9595728,
+            '\'s': 5851494, 
+            '\'re': 852708, 
+            '#': 1516269,
+            '--': 1657627,
+            '(': 2544629,
+            ')': 2492788,
+            '-': 579528, 
+            '..': 524312, 
+            '1': 326109, 
+            '2': 260451, 
+            '//': 183063, 
+            '3': 177283, 
+            '10': 174001, 
+            '4': 138518,
+            '$': 133662, 
+            '*': 133539, 
+            '5': 123096, 
+            '20': 109048,
+            '&': 108322, 
+            '6': 98466, 
+            '=': 88952, 
+            '15': 89885, 
+            '12': 88043, 
+            '8': 86133, 
+            '7': 82974, 
+            'P': 80208, 
+            '11': 77852, 
+            '9': 62952, 
+            '25': 61041,
+            '50': 60467, 
+            '18': 56099,
+            '14': 56034, 
+            '100': 55195, 
+            '...': 32371,
+            '1920': 2807,
+            '30': 92822,
+            '47': 11079,
+            '65': 14235,
+            'vii.': 2154, 
+            'viii.': 1657,
+            'xi.': 2110, 
+            'xii.': 1055,
+            'o': 28701, 
+        }

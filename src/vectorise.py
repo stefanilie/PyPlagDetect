@@ -37,6 +37,8 @@ class VectorAnaliser:
         self.arr_suspect_offset = []
         self.arr_suspect_overlap = []
         self.dic = pyphen.Pyphen(lang='en_GB')
+        self.coca_freq_dict = Helper.setup_coca_dictionary()
+        self.missed_words = []
 
     def tokenize_corpuses(self, file_name):
         """
@@ -95,6 +97,21 @@ class VectorAnaliser:
             for word in words:
                 word = word.lower()
                 word_freq = suspicious_freq_dist[word]
+                word_freq_wiki_corpus = self.tokenized[word]
+
+                if '-' in word and word_freq_wiki_corpus == 0:
+                        word_freq_wiki_corpus = np.average([self.tokenized[i] for i in word.split('-')])
+
+                # this coveres the cases where the word isn't part of the 
+                # big wiki freq dist.
+                if word_freq_wiki_corpus == 0:
+                    if word not in self.coca_freq_dict.keys():
+                        if word not in self.missed_words:
+                            self.missed_words.append(word)
+                        word_freq_wiki_corpus = 1
+                    else: 
+                        word_freq_wiki_corpus = self.coca_freq_dict[word]
+                
                 if word not in  suspicious_freq_dist.keys():
                     # this is for some weird cases where we have words that
                     # couldn't be tokenized.
@@ -103,8 +120,9 @@ class VectorAnaliser:
 
                 # computing number of occurances 
                 # awf[item_index] = log(float(most_common_word_freq)/word_freq) / log(2)
-                # if self.tokenized[word.lower()]!=0:
-                awf[item_index] = floor(log(np.true_divide(most_common_word_freq, self.tokenized[word]))/log(2))
+
+                # awf[item_index] = floor(log(np.true_divide(most_common_word_freq, word_freq_wiki_corpus))/log(2))
+                awf[item_index] = floor(log(np.true_divide(word_freq_wiki_corpus, word_freq))/log(2))
                 pcf[item_index] = fdist[word] if word in string.punctuation else 0
                 stp[item_index] = fdist[word] if word in self.stop_words else 0
                 pos[item_index] = arr_tagged_pos_per_sent[index][word]
@@ -367,6 +385,8 @@ class VectorAnaliser:
         print "precision: ", np.mean(np.array(arr_mean_precision))
         print "recall: ", np.mean(np.array(arr_mean_recall))
         print "f1: ", np.mean(np.array(arr_mean_f1))
+        print "\n============Missed words=========="
+        print self.missed_words
 
 
  
