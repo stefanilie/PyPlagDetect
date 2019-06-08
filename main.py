@@ -78,10 +78,10 @@ def main():
                     isReady = True
             if decision==1:
                 taggerReader = PlaintextCorpusReader(OANC, '.*\.txt')        
-                vector_analizer = VectorAnaliser(taggerReader, stopWords)
+                vector_analizer = VectorAnaliser(taggerReader, tagger, stopWords)
                 vector_analizer.vectorise(corpusReader, should_tokenize_corpuses=True)
             elif decision==2:
-                vector_analizer = VectorAnaliser(corpusReader, stopWords)
+                vector_analizer = VectorAnaliser(corpusReader, tagger, stopWords)
                 vector_analizer.vectorise(corpusReader)
             else:
                 print "Option '{0}' doesn't exist.".format(decision)
