@@ -1,4 +1,6 @@
+import os
 import pdb
+import sys
 import pickle
 import pyphen
 import string
@@ -12,10 +14,12 @@ from helper import Helper
 from numpy.linalg import norm
 from collections import Counter
 from compiler.ast import flatten
+from nltk.tag import UnigramTagger
 from nltk.probability import FreqDist
 from sacremoses import MosesDetokenizer
 from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
+from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
 
 class VectorAnaliser:
@@ -52,6 +56,24 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(reuters, self.stop_words, True)
         self.tokenized += Helper.tokenize_corpus(self.corpus, self.stop_words)
         Helper.create_dump(self.tokenized, file_name)
+
+    def train_unigram_tagger(self):
+        '''
+        Trains an unigram tagger based on OANC.
+        Exports data to a dump file in the dumps folder.
+        '''
+        training_tags = []
+        files = self.corpus.fileids()
+        words = self.corpus.sents(files[0])
+        for index, file_item in enumerate(files):
+            words += self.corpus.words(file_item)
+        for word in words:
+            if '_' in word:
+                w, pos = word.split('_')
+                training_tags.append((w, pos))
+        pos_tagger = UnigramTagger([training_tags])
+        Helper.create_dump(pos_tagger, 'unigram_tagger.pickle')
+
 
     def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
         """
@@ -271,12 +293,12 @@ class VectorAnaliser:
 
             self.arr_overlap, self.arr_suspect_overlap = result_analizer.compare_offsets(self.arr_plag_offset, self.arr_suspect_offset)
 
-
     def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
         """
         Main method for vectorising the corpus. 
         @param corpus:
         """
+        # TODO: change these to constants
         # file_name = "tokenized.pickle"
         file_name = "wiki.pickle"
        
@@ -286,7 +308,10 @@ class VectorAnaliser:
 
             # dist_husige_token = FreqDist(self.tokenized)
         elif not len(self.tokenized) and should_tokenize_corpuses:
-            self.tokenize_corpuses(file_name)
+            # self.tokenize_corpuses(file_name)
+            self.train_unigram_tagger()
+            print "\nTokenizing and training finished succesfully!"
+            sys.exit()
 
         # Tokenizing suspicious corpus and getting most common from HUGE corpus.
         files = corpus.fileids()

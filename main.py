@@ -3,7 +3,7 @@ import re
 import sys
 import math
 import nltk
-from src.config import SUSPICIOUS, TRAINING
+from src.config import SUSPICIOUS, TRAINING, OANC
 import string
 import pprint
 
@@ -11,7 +11,7 @@ from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict, treebank
-from nltk.tag import UnigramTagger
+
 
 from src.paragraph import ParagraphAnalyser
 from src.sentence import SentenceAnalyser
@@ -55,8 +55,8 @@ def main():
         pretty_printer = pprint.PrettyPrinter(indent=2)
 
         # Training a unigram part of speech tagger
-        train_sents = treebank.tagged_sents()
-        tagger = UnigramTagger(train_sents)
+        # train_sents = treebank.tagged_sents()
+        # tagger = UnigramTagger(train_sents)
         # TODO: train this tagger with a huge corpus.
 
         if mode == "vector":
@@ -65,7 +65,7 @@ def main():
 
             # basic menu
             while(not isReady):
-                print "1. Tokenize and export dump via Pickle"
+                print "1. Tokenize, train and export dump via Pickle"
                 print "2. Import using Pickle"
                 try:
                     decision = raw_input("Choose action: ")
@@ -77,11 +77,11 @@ def main():
                 else:
                     isReady = True
             if decision==1:
-                trainingCorpusReader=PlaintextCorpusReader(TRAINING, '.*\.txt')
-                vector_analizer = VectorAnaliser(trainingCorpusReader, tagger, stopWords)
+                taggerReader = PlaintextCorpusReader(OANC, '.*\.txt')        
+                vector_analizer = VectorAnaliser(taggerReader, stopWords)
                 vector_analizer.vectorise(corpusReader, should_tokenize_corpuses=True)
             elif decision==2:
-                vector_analizer = VectorAnaliser(corpusReader, tagger, stopWords)
+                vector_analizer = VectorAnaliser(corpusReader, stopWords)
                 vector_analizer.vectorise(corpusReader)
             else:
                 print "Option '{0}' doesn't exist.".format(decision)
