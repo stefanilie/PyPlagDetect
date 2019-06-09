@@ -307,7 +307,7 @@ class Helper:
     @staticmethod
     def stddev(sent_array, cosine_similarity_array, mean):
         sum=0
-        print "\nComputing sttdev"
+        print "\nComputing stddev"
         for index, sent in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
             # TODO: check to see .sum methid f  rom numpy

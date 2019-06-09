@@ -11,7 +11,7 @@ from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict, treebank
-
+from nltk.tag import UnigramTagger
 
 from src.paragraph import ParagraphAnalyser
 from src.sentence import SentenceAnalyser
@@ -55,8 +55,8 @@ def main():
         pretty_printer = pprint.PrettyPrinter(indent=2)
 
         # Training a unigram part of speech tagger
-        # train_sents = treebank.tagged_sents()
-        # tagger = UnigramTagger(train_sents)
+        train_sents = treebank.tagged_sents()
+        tagger = UnigramTagger(train_sents)
         # TODO: train this tagger with a huge corpus.
 
         if mode == "vector":

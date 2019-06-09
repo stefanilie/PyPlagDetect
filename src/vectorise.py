@@ -5,6 +5,7 @@ import pickle
 import pyphen
 import string
 import numpy as np
+import multiprocessing
 import scipy.stats as sc
 
 from math import log, floor
@@ -17,6 +18,7 @@ from compiler.ast import flatten
 from nltk.tag import UnigramTagger
 from nltk.probability import FreqDist
 from sacremoses import MosesDetokenizer
+from config import WIKI_DUMP, TAGGER_DUMP
 from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus.reader import PlaintextCorpusReader
@@ -43,6 +45,9 @@ class VectorAnaliser:
         self.dic = pyphen.Pyphen(lang='en_GB')
         self.coca_freq_dict = Helper.setup_coca_dictionary()
         self.missed_words = []
+        self.arr_mean_precision = []
+        self.arr_mean_recall = []
+        self.arr_mean_f1 = []
 
     def tokenize_corpuses(self, file_name):
         """
@@ -57,23 +62,34 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(self.corpus, self.stop_words)
         Helper.create_dump(self.tokenized, file_name)
 
-    def train_unigram_tagger(self):
+    def train_unigram_tagger(self, TAGGER_DUMP):
         '''
         Trains an unigram tagger based on OANC.
         Exports data to a dump file in the dumps folder.
         '''
-        training_tags = []
+        toTag = []
         files = self.corpus.fileids()
-        words = self.corpus.sents(files[0])
+        print "\nExtracting words from files..."
         for index, file_item in enumerate(files):
-            words += self.corpus.words(file_item)
-        for word in words:
-            if '_' in word:
-                w, pos = word.split('_')
-                training_tags.append((w, pos))
-        pos_tagger = UnigramTagger([training_tags])
-        Helper.create_dump(pos_tagger, 'unigram_tagger.pickle')
-
+            Helper.print_progress(index, len(files))
+            paras = self.corpus.paras(file_item)
+        
+            for sentences in paras:
+                st = flatten(sentences)
+                training_tags = []
+                for word in st:
+                    if '_' in word:
+                        if len(word.split('_')) > 2:
+                            continue
+                        w, pos = word.split('_')
+                        if w != '' and pos != '':
+                            training_tags.append((w, pos))
+                if len(toTag) > 0:
+                    toTag.append(training_tags) 
+        print "\Training tagger..."     
+        pos_tagger = UnigramTagger(train=toTag, model=('effect', 'NN'), verbose=True)
+        print "\nCreating dump in unigram_tagger.pickle..."
+        Helper.create_dump(pos_tagger, TAGGER_DUMP)
 
     def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
         """
@@ -194,6 +210,92 @@ class VectorAnaliser:
 
         return Helper.normalize_vector([toReturn])
 
+    def analize_file(self, file_item, k):
+        # Most common word in a big corpus.
+        # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
+        most_common_word_freq = self.tokenized.most_common()[0][1]
+
+        windows_total = []
+        doc_mean_vector = []
+        dict_all_sentences = {} # used to save all the windows sent for analization.
+        dict_offset_index = {} # used for saving the start offset and lenght of each window.
+        offset_counter = 0
+        self.arr_plag_offset = []
+        self.arr_suspect_offset = []
+        self.arr_suspect_overlap = []
+        self.arr_cosine_similarity = []
+        self.mean = 0
+        self.standard_deviation = 0
+
+        suspicious_freq_dist = Helper.tokenize_file(self.corpus, self.stop_words, file_item, True)
+
+        # tokenizing the words from the sentences 
+        sentences = [word_tokenize(sent) for sent in sent_tokenize(self.corpus.raw(fileids=file_item))]
+        
+        # computing the document mean vector
+        print "\n==========\nanalizing %s" % (file_item)
+        print "\nComputing reference_vector"
+        doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist, True)
+        print "\nComputing features"
+        for index, sentence in enumerate(sentences):
+            """
+            Window is represented by all k+1 items.
+            Until index is equal to k/2, it will jump.
+            After, it will pass through until index+k is equal to length.
+            """
+            arr_sentences = []
+            if index<k/2:
+                arr_sentences = sentences[:k]
+            elif index+k/2 >= len(sentences):
+                arr_sentences = sentences[len(sentences)-k:len(sentences)]
+            else:
+                arr_sentences = sentences[index-k/2:index+k/2]                    
+
+            Helper.print_progress(index, len(sentences))
+            toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist, False)
+            windows_total.append(toAppend)
+            
+            dict_all_sentences[index] = sentence
+
+            new_offset = len(self.md.detokenize(sentence))
+            offset_counter += new_offset
+            dict_offset_index[index] = [offset_counter, new_offset]
+
+
+        # compute cosine similarity for all windows plus mean
+        self.compute_cosine_similarity_array(windows_total, doc_mean_vector)  
+
+        # computing the standard deviation 
+        self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
+
+        arr_suspect_chunks = self.get_suspect_index(sentences)
+        self.compare_with_xml(file_item, dict_offset_index, arr_suspect_chunks)
+
+        # if self.arr_plag_offset:
+        recall = 0
+        precision = 0
+        f1 = 0
+        if len(self.arr_plag_offset) == 0 and len(self.arr_suspect_offset) == 0:
+            # arr_mean_recall.append(1)
+            # arr_mean_precision.append(1)
+            # arr_mean_f1.append(1)
+            # print "\n%s precision: " % (file_item), 1
+            # print "%s recall: " % (file_item), 1
+            # print "%s f1: " % (file_item), 1
+            print "\n%s: No plagiarism detected and none existing" % (file_item)
+        else: 
+            precision = Helper.precision(self.arr_overlap, self.arr_plag_offset)
+            recall = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
+            f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
+
+            self.arr_mean_recall.append(recall)
+            self.arr_mean_precision.append(precision)
+            self.arr_mean_f1.append(f1)
+        
+            print "\n%s precision: " % (file_item), precision
+            print "%s recall: " % (file_item), recall
+            print "%s f1: " % (file_item), f1
+
     def compute_POS(self, sentences):
         """
         Return Array with dict per sent of pos tokenized sentences values.
@@ -201,8 +303,8 @@ class VectorAnaliser:
         arr_pos=[]
         for sentence in sentences:
             # TODO: change to use this instead of default pos_tag
-            # tagged_sent = self.tagger.tag(sentence)
-            
+            # tagged_sents = self.tagger.tag(sentence)
+            # pdb.set_trace()
             tagged_sents = pos_tag(sentence)
             tagged_sents = self.create_pos_dict(tagged_sents)
             
@@ -283,7 +385,6 @@ class VectorAnaliser:
         """
         Compares the paragraphs detected by the algorithm 
         with the ones provided by the training corpus.
-        @return: TODO: number of correct detected chars.
         """
         result_analizer = ResultsAnalyzer(self.corpus, file_item)
         xml_data = result_analizer.get_offset_from_xml()
@@ -293,23 +394,29 @@ class VectorAnaliser:
 
             self.arr_overlap, self.arr_suspect_overlap = result_analizer.compare_offsets(self.arr_plag_offset, self.arr_suspect_offset)
 
+    def multi_process_array(self, arr_files, k):
+        '''
+        Just a wrapper so that we can multi-process.
+        '''
+        for f in arr_files:
+            self.analize_file(f, k)
+
     def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
         """
         Main method for vectorising the corpus. 
-        @param corpus:
         """
-        # TODO: change these to constants
-        # file_name = "tokenized.pickle"
-        file_name = "wiki.pickle"
        
         # check if tokenized is done.
         if not len(self.tokenized) and not should_tokenize_corpuses:
-            self.tokenized = Helper.read_dump(file_name)
+            print "\nImporting wikipedia dump..."
+            self.tokenized = Helper.read_dump(WIKI_DUMP)
+            # TODO: replace with the UnigramTagger when It will work.
+            # self.tagger = Helper.read_dump(TAGGER_DUMP)
+            # pdb.set_trace()
 
-            # dist_husige_token = FreqDist(self.tokenized)
         elif not len(self.tokenized) and should_tokenize_corpuses:
-            # self.tokenize_corpuses(file_name)
-            self.train_unigram_tagger()
+            self.tokenize_corpuses(WIKI_DUMP)
+            self.train_unigram_tagger(TAGGER_DUMP)
             print "\nTokenizing and training finished succesfully!"
             sys.exit()
 
@@ -317,105 +424,29 @@ class VectorAnaliser:
         files = corpus.fileids()
         # self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
         
-        # Most common word in a big corpus.
-        # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
-        most_common_word_freq = self.tokenized.most_common()[0][1]
-
         # temporary value for k.
         # will be changed after developing a learning algorithm.
         k=coeficient
-        arr_mean_precision = []
-        arr_mean_recall = []
-        arr_mean_f1 = []
-        for file_item in files:
-            windows_total = []
-            doc_mean_vector = []
-            dict_all_sentences = {} # used to save all the windows sent for analization.
-            dict_offset_index = {} # used for saving the start offset and lenght of each window.
-            offset_counter = 0
-            self.arr_plag_offset = []
-            self.arr_suspect_offset = []
-            self.arr_suspect_overlap = []
-            self.arr_cosine_similarity = []
-            self.mean = 0
-            self.standard_deviation = 0
+        first_half = files[:len(files)/2]
+        second_half = files[len(files)/2:]
+        p1 = multiprocessing.Process(target=self.multi_process_array, args=(first_half, k))
+        p2 = multiprocessing.Process(target=self.multi_process_array, args=(second_half, k))
 
-            suspicious_freq_dist = Helper.tokenize_file(corpus, self.stop_words, file_item, True)
+        p1.start()
+        p2.start()
 
-            # tokenizing the words from the sentences 
-            sentences = [word_tokenize(sent) for sent in sent_tokenize(corpus.raw(fileids=file_item))]
-            
-            # computing the document mean vector
-            print "\n==========\nanalizing %s" % (file_item)
-            print "\nComputing reference_vector"
-            doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist, True)
-            print "\nComputing features"
-            for index, sentence in enumerate(sentences):
-                """
-                Window is represented by all k+1 items.
-                Until index is equal to k/2, it will jump.
-                After, it will pass through until index+k is equal to length.
-                """
-                arr_sentences = []
-                if index<k/2:
-                    arr_sentences = sentences[:k]
-                elif index+k/2 >= len(sentences):
-                    arr_sentences = sentences[len(sentences)-k:len(sentences)]
-                else:
-                    arr_sentences = sentences[index-k/2:index+k/2]                    
-
-                Helper.print_progress(index, len(sentences))
-                toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist, False)
-                windows_total.append(toAppend)
-                
-                dict_all_sentences[index] = sentence
-
-                new_offset = len(self.md.detokenize(sentence))
-                offset_counter += new_offset
-                dict_offset_index[index] = [offset_counter, new_offset]
-
-
-            # compute cosine similarity for all windows plus mean
-            self.compute_cosine_similarity_array(windows_total, doc_mean_vector)  
-
-            # computing the standard deviation 
-            self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
-
-            arr_suspect_chunks = self.get_suspect_index(sentences)
-            self.compare_with_xml(file_item, dict_offset_index, arr_suspect_chunks)
-
-            # if self.arr_plag_offset:
-            recall = 0
-            precision = 0
-            f1 = 0
-            if len(self.arr_plag_offset) == 0 and len(self.arr_suspect_offset) == 0:
-                # arr_mean_recall.append(1)
-                # arr_mean_precision.append(1)
-                # arr_mean_f1.append(1)
-                # print "\n%s precision: " % (file_item), 1
-                # print "%s recall: " % (file_item), 1
-                # print "%s f1: " % (file_item), 1
-                print "\n%s: No plagiarism detected and none existing" % (file_item)
-            else: 
-                precision = Helper.precision(self.arr_overlap, self.arr_plag_offset)
-                recall = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
-                f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
-
-                arr_mean_recall.append(recall)
-                arr_mean_precision.append(precision)
-                arr_mean_f1.append(f1)
-            
-                print "\n%s precision: " % (file_item), precision
-                print "%s recall: " % (file_item), recall
-                print "%s f1: " % (file_item), f1
+        p1.join()
+        p2.join()
+        # for file_item in files:
+        #     self.analize_file(file_item, k)
             # else:
             #     print "\nNo plagiate from xml for %s" % (file_item)
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
         print "\n============TOTAL================="
-        print "precision: ", np.mean(np.array(arr_mean_precision))
-        print "recall: ", np.mean(np.array(arr_mean_recall))
-        print "f1: ", np.mean(np.array(arr_mean_f1))
+        print "precision: ", np.mean(np.array(self.arr_mean_precision))
+        print "recall: ", np.mean(np.array(self.arr_mean_recall))
+        print "f1: ", np.mean(np.array(self.arr_mean_f1))
         print "\n============Missed words=========="
         print self.missed_words
 
