@@ -6,4 +6,5 @@ DUMPS=BASE_PATH+"/dumps"
 OANC=BASE_PATH+'/OANC'
 
 WIKI_DUMP='wiki.pickle'
+SMALL_DUMP='tokenized.pickle'
 TAGGER_DUMP='unigram_tagger.pickle'

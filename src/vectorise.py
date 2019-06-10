@@ -5,7 +5,6 @@ import pickle
 import pyphen
 import string
 import numpy as np
-import multiprocessing
 import scipy.stats as sc
 
 from math import log, floor
@@ -18,7 +17,8 @@ from compiler.ast import flatten
 from nltk.tag import UnigramTagger
 from nltk.probability import FreqDist
 from sacremoses import MosesDetokenizer
-from config import WIKI_DUMP, TAGGER_DUMP
+from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP
+from multiprocessing import Process, Manager
 from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus.reader import PlaintextCorpusReader
@@ -45,9 +45,6 @@ class VectorAnaliser:
         self.dic = pyphen.Pyphen(lang='en_GB')
         self.coca_freq_dict = Helper.setup_coca_dictionary()
         self.missed_words = []
-        self.arr_mean_precision = []
-        self.arr_mean_recall = []
-        self.arr_mean_f1 = []
 
     def tokenize_corpuses(self, file_name):
         """
@@ -210,7 +207,7 @@ class VectorAnaliser:
 
         return Helper.normalize_vector([toReturn])
 
-    def analize_file(self, file_item, k):
+    def analize_file(self, file_item, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
         # Most common word in a big corpus.
         # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
         most_common_word_freq = self.tokenized.most_common()[0][1]
@@ -288,10 +285,10 @@ class VectorAnaliser:
             recall = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
             f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
 
-            self.arr_mean_recall.append(recall)
-            self.arr_mean_precision.append(precision)
-            self.arr_mean_f1.append(f1)
-        
+            arr_mean_recall.append(recall)
+            arr_mean_precision.append(precision)
+            arr_mean_f1.append(f1)
+
             print "\n%s precision: " % (file_item), precision
             print "%s recall: " % (file_item), recall
             print "%s f1: " % (file_item), f1
@@ -393,13 +390,15 @@ class VectorAnaliser:
             self.arr_suspect_offset = result_analizer.chunks_to_offset(dict_offset_index, suspect_indexes)
 
             self.arr_overlap, self.arr_suspect_overlap = result_analizer.compare_offsets(self.arr_plag_offset, self.arr_suspect_offset)
+            print '=-=arr_overlap', self.arr_overlap
+            print '=-arr_suspect_overlap', self.arr_suspect_overlap
 
-    def multi_process_array(self, arr_files, k):
+    def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
         '''
         Just a wrapper so that we can multi-process.
         '''
         for f in arr_files:
-            self.analize_file(f, k)
+            self.analize_file(f, k, arr_mean_precision, arr_mean_recall, arr_mean_f1)
 
     def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
         """
@@ -410,6 +409,8 @@ class VectorAnaliser:
         if not len(self.tokenized) and not should_tokenize_corpuses:
             print "\nImporting wikipedia dump..."
             self.tokenized = Helper.read_dump(WIKI_DUMP)
+            # print "\nImporting dump..."
+            # self.tokenized = Helper.read_dump(SMALL_DUMP)
             # TODO: replace with the UnigramTagger when It will work.
             # self.tagger = Helper.read_dump(TAGGER_DUMP)
             # pdb.set_trace()
@@ -427,11 +428,16 @@ class VectorAnaliser:
         # temporary value for k.
         # will be changed after developing a learning algorithm.
         k=coeficient
+        manager = Manager()
+        # self.multi_process_array(files, k)
         first_half = files[:len(files)/2]
         second_half = files[len(files)/2:]
-        p1 = multiprocessing.Process(target=self.multi_process_array, args=(first_half, k))
-        p2 = multiprocessing.Process(target=self.multi_process_array, args=(second_half, k))
-
+        arr_mean_precision = manager.list()
+        arr_mean_recall = manager.list()
+        arr_mean_f1 = manager.list()
+        p1 = Process(target=self.multi_process_array, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
+        p2 = Process(target=self.multi_process_array, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
+       
         p1.start()
         p2.start()
 
@@ -443,10 +449,11 @@ class VectorAnaliser:
             #     print "\nNo plagiate from xml for %s" % (file_item)
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
+        pdb.set_trace()
         print "\n============TOTAL================="
-        print "precision: ", np.mean(np.array(self.arr_mean_precision))
-        print "recall: ", np.mean(np.array(self.arr_mean_recall))
-        print "f1: ", np.mean(np.array(self.arr_mean_f1))
+        print "precision: ", np.mean(np.array(arr_mean_precision))
+        print "recall: ", np.mean(np.array(arr_mean_recall))
+        print "f1: ", np.mean(np.array(arr_mean_f1))
         print "\n============Missed words=========="
         print self.missed_words
 
