@@ -80,7 +80,7 @@ class ResultsAnalyzer:
     Returns detected sentences using the offset of each sentence.
     @param: dict_offset_index - contains where each sentence starts and its length
     @param: chunks - index of possbile plagiarized sentences.
-    @return arr_passages - string with actual characters plagiarized from source file.
+    @return arr_passages - arr of strings with actual characters plagiarized from source file.
     '''
     arr_passages = []
     for chunk in chunks:
@@ -94,7 +94,7 @@ class ResultsAnalyzer:
         for item in chunk:
           length += dict_offset_index[item][-1]
         arr_passages.append(self.read_by_offset(offset, length))
-    return flatten(arr_passages)
+    return arr_passages
 
   def chunks_to_offset(self, dict_offset_index, chunks):
     '''

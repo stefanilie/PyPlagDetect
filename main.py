@@ -55,13 +55,14 @@ def main():
     print "Please choose an action:"
     while(not isReady):
         print "1. Tokenize and export dump via Pickle"
-        print "2. Import using Pickle"
+        print "2. Import dumps using Pickle and Analyze PAN corpus"
+        print "3. Analyse files (without precision output)"
         try:
             decision = raw_input("Choose action: ")
             decision = int(decision)
         except ValueError:
             print "Option '{0}' doesn't exist.".format(decision)
-        if decision not in [1, 2]:
+        if decision not in [1, 2, 3]:
             print "Option '{0}' doesn't exist.".format(decision)
         else:
             isReady = True
@@ -69,9 +70,12 @@ def main():
     if decision==1:
         trainingCorpusReader=PlaintextCorpusReader(TRAINING, '.*\.txt')
         vector_analizer = VectorAnaliser(trainingCorpusReader, stopWords)
-        vector_analizer.vectorise(corpusReader, should_tokenize_corpuses=True)
+        vector_analizer.should_tokenize(should_tokenize_corpuses=True)
     elif decision==2:
         vector_analizer = VectorAnaliser(corpusReader, stopWords)
+        vector_analizer.vectorise(corpusReader)
+    elif decision==3:
+        vector_analizer = VectorAnaliser(corpusReader, stopWords, custom_mode=True)
         vector_analizer.vectorise(corpusReader)
     else:
         print "Option '{0}' doesn't exist.".format(decision)

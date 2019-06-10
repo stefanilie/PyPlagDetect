@@ -29,7 +29,7 @@ class VectorAnaliser:
     """
     Constructor
     """
-    def __init__(self, corpus, stop_words):
+    def __init__(self, corpus, stop_words, custom_mode=False):
         self.corpus = corpus
         # self.tagger = tagger
         self.stop_words = stop_words
@@ -45,6 +45,21 @@ class VectorAnaliser:
         self.dic = pyphen.Pyphen(lang='en_GB')
         self.coca_freq_dict = Helper.setup_coca_dictionary()
         self.missed_words = []
+        self.custom_mode = custom_mode
+
+    def should_tokenize(self, should_tokenize_corpuses=False):
+        # check if tokenized is done.
+        if not len(self.tokenized) and not should_tokenize_corpuses:
+            print "\nReading wikipedia dump..."
+            self.tokenized = Helper.read_dump(WIKI_DUMP)
+            # TODO: replace with the UnigramTagger when It will work.
+            # self.tagger = Helper.read_dump(TAGGER_DUMP)
+
+        elif not len(self.tokenized) and should_tokenize_corpuses:
+            self.tokenize_corpuses(WIKI_DUMP)
+            self.train_unigram_tagger(TAGGER_DUMP)
+            print "\nTokenizing and training finished succesfully!"
+            sys.exit()
 
     def tokenize_corpuses(self, file_name):
         """
@@ -268,30 +283,31 @@ class VectorAnaliser:
         arr_suspect_chunks = self.get_suspect_index(sentences)
         self.compare_with_xml(file_item, dict_offset_index, arr_suspect_chunks)
 
-        # if self.arr_plag_offset:
-        recall = 0
-        precision = 0
-        f1 = 0
-        if len(self.arr_plag_offset) == 0 and len(self.arr_suspect_offset) == 0:
-            # arr_mean_recall.append(1)
-            # arr_mean_precision.append(1)
-            # arr_mean_f1.append(1)
-            # print "\n%s precision: " % (file_item), 1
-            # print "%s recall: " % (file_item), 1
-            # print "%s f1: " % (file_item), 1
-            print "\n%s: No plagiarism detected and none existing" % (file_item)
-        else: 
-            precision = Helper.precision(self.arr_overlap, self.arr_plag_offset)
-            recall = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
-            f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
+        if self.custom_mode == False:
+            # if self.arr_plag_offset:
+            recall = 0
+            precision = 0
+            f1 = 0
+            if len(self.arr_plag_offset) == 0 and len(self.arr_suspect_offset) == 0:
+                # arr_mean_recall.append(1)
+                # arr_mean_precision.append(1)
+                # arr_mean_f1.append(1)
+                # print "\n%s precision: " % (file_item), 1
+                # print "%s recall: " % (file_item), 1
+                # print "%s f1: " % (file_item), 1
+                print "\n%s: No plagiarism detected and none existing" % (file_item)
+            else: 
+                precision = Helper.precision(self.arr_overlap, self.arr_plag_offset)
+                recall = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
+                f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
 
-            arr_mean_recall.append(recall)
-            arr_mean_precision.append(precision)
-            arr_mean_f1.append(f1)
+                arr_mean_recall.append(recall)
+                arr_mean_precision.append(precision)
+                arr_mean_f1.append(f1)
 
-            print "\n%s precision: " % (file_item), precision
-            print "%s recall: " % (file_item), recall
-            print "%s f1: " % (file_item), f1
+                print "\n%s precision: " % (file_item), precision
+                print "%s recall: " % (file_item), recall
+                print "%s f1: " % (file_item), f1
 
     def compute_POS(self, sentences):
         """
@@ -391,6 +407,11 @@ class VectorAnaliser:
             self.arr_suspect_offset = result_analizer.chunks_to_offset(dict_offset_index, suspect_indexes)
 
             self.arr_overlap, self.arr_suspect_overlap = result_analizer.compare_offsets(self.arr_plag_offset, self.arr_suspect_offset)
+        elif not xml_data and self.custom_mode ==True:
+            passages = result_analizer.chunks_to_passages(dict_offset_index, suspect_indexes)
+            print "\nPossible plagiarised passages for %s:" % (file_item)
+            print passages
+
 
     def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
         '''
@@ -399,33 +420,17 @@ class VectorAnaliser:
         for f in arr_files:
             self.analize_file(f, k, arr_mean_precision, arr_mean_recall, arr_mean_f1)
 
-    def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
+    def vectorise(self, corpus, coeficient=4, custom_mode=False):
         """
         Main method for vectorising the corpus. 
         @param corpus:
         """
-        # TODO: change these to constants
-        # file_name = "tokenized.pickle"
-       
-        # check if tokenized is done.
-        if not len(self.tokenized) and not should_tokenize_corpuses:
-            print "\nReading wikipedia dump..."
-            self.tokenized = Helper.read_dump(WIKI_DUMP)
-            # print "\nImporting dump..."
-            # self.tokenized = Helper.read_dump(SMALL_DUMP)
-            # TODO: replace with the UnigramTagger when It will work.
-            # self.tagger = Helper.read_dump(TAGGER_DUMP)
-
-        elif not len(self.tokenized) and should_tokenize_corpuses:
-            self.tokenize_corpuses(WIKI_DUMP)
-            # self.train_unigram_tagger(TAGGER_DUMP)
-            # print "\nTokenizing and training finished succesfully!"
-            # sys.exit()
-
         # Tokenizing suspicious corpus and getting most common from HUGE corpus.
         files = corpus.fileids()
         # self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
         
+        self.should_tokenize()
+
         # Most common word in a big corpus.
         # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
         most_common_word_freq = self.tokenized.most_common()[0][1]
