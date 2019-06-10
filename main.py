@@ -89,7 +89,7 @@ def main():
 
         # Analizing paragraphs for features and outputting an object.
         if mode == "para" or mode == "all":
-            para_analyser = ParagraphAnalyser(corpusReader, tagger, stopWords)
+            para_analyser = ParagraphAnalyser(corpusReader,tagger, stopWords)
             feature_arr = para_analyser.compute_paragraph_features(corpus=corpusReader)
             feature_arr = para_analyser.classify_chunks_paragraph(feature_dict=feature_arr,
                                                         corpus=corpusReader)
