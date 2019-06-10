@@ -105,3 +105,5 @@ training/
 
 # data dumps
 dumps/
+suspicious-documents/
+OANC/

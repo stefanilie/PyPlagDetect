@@ -58,7 +58,7 @@ class ResultsAnalyzer:
     based on the provided offset and length.
     '''
     if self.file_name not in self.corpus.fileids():
-      raise Exception("File %s not present in corpus" %(self.file_name))
+      raise Exception("\nFile %s not present in corpus" %(self.file_name))
     else:
       arr_plagiarised = []
       for xml_line in xml_data:

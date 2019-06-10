@@ -4,7 +4,6 @@ import os
 import sys
 import pickle
 import numpy as np
-from numpy import dot
 from math import e, log
 from itertools import groupby
 from numpy.linalg import norm
@@ -307,7 +306,7 @@ class Helper:
     @staticmethod
     def stddev(sent_array, cosine_similarity_array, mean):
         sum=0
-        print "\nComputing sttdev"
+        print "\nComputing stddev"
         for index, sent in enumerate(sent_array):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
             # TODO: check to see .sum methid f  rom numpy
@@ -333,8 +332,7 @@ class Helper:
         true positive/actual results
         '''
         s=0
-        if len(arr_plag_offset) == 0:
-            pdb.set_trace()
+        if arr_plag_offset == 0 or arr_overlap == 0:
             return 0
         for index, plag_interval in enumerate(arr_plag_offset):
             plagiarized_chars = plag_interval[1]-plag_interval[0]
@@ -348,8 +346,7 @@ class Helper:
         '''
         s=0
         # check here if sus.offset has same length ass sus.overlap 
-        if len(arr_suspect_offset) == 0:
-            pdb.set_trace()
+        if arr_suspect_offset == 0 or arr_suspect_overlap == 0:
             return 0
         for index, suspect_interval in enumerate(arr_suspect_offset):
             suspect_chars = suspect_interval[1]-suspect_interval[0]
@@ -367,9 +364,7 @@ class Helper:
         else: 
             return 0
     
-    # Print iterations progress
     @staticmethod
-    # Print iterations progress
     def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
         """
         Call in a loop to create terminal progress bar
@@ -391,3 +386,78 @@ class Helper:
         if iteration == total:
             sys.stdout.write('\n')
         sys.stdout.flush()
+
+    @staticmethod
+    def compute_flesch_reading_ease(words, syllables, sentences):
+        '''
+        Computes the Flesch reading ease.
+        '''
+        reading_ease = 206.835-1.015 * (np.true_divide(words, sentences)) - 84.6 * (np.true_divide(syllables, words))
+        grade_level = 0.39 * (np.true_divide(words, sentences)) + 11.8 * (np.true_divide(syllables, words)) - 15.59
+        return reading_ease, grade_level
+
+    @staticmethod 
+    def setup_coca_dictionary():
+        '''
+        Using data from https://www.english-corpora.org/coca/, 
+        it adds the values that the wiki FreqDist doesn't contain.
+        Examples include 'a', 'i' or punctuation.
+        We decide which has to be mapped here based on the 0 value
+        they contain inside the wiki freq dist.
+        '''
+        return {
+            'a': 12953004,
+            'i': 5936716, 
+            ',': 33025640,
+            '.': 29239642,
+            ';': 1113520, 
+            ':': 4046651, 
+            '\'': 1239134, 
+            '/': 6574,
+            '!': 485059, 
+            '?': 2243206,
+            '\"': 9595728,
+            '\'s': 5851494, 
+            '\'re': 852708, 
+            '#': 1516269,
+            '--': 1657627,
+            '(': 2544629,
+            ')': 2492788,
+            '-': 579528, 
+            '..': 524312, 
+            '1': 326109, 
+            '2': 260451, 
+            '//': 183063, 
+            '3': 177283, 
+            '10': 174001, 
+            '4': 138518,
+            '$': 133662, 
+            '*': 133539, 
+            '5': 123096, 
+            '20': 109048,
+            '&': 108322, 
+            '6': 98466, 
+            '=': 88952, 
+            '15': 89885, 
+            '12': 88043, 
+            '8': 86133, 
+            '7': 82974, 
+            'P': 80208, 
+            '11': 77852, 
+            '9': 62952, 
+            '25': 61041,
+            '50': 60467, 
+            '18': 56099,
+            '14': 56034, 
+            '100': 55195, 
+            '...': 32371,
+            '1920': 2807,
+            '30': 92822,
+            '47': 11079,
+            '65': 14235,
+            'vii.': 2154, 
+            'viii.': 1657,
+            'xi.': 2110, 
+            'xii.': 1055,
+            'o': 28701, 
+        }

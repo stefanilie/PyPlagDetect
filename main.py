@@ -3,7 +3,7 @@ import re
 import sys
 import math
 import nltk
-from src.config import SUSPICIOUS, TRAINING
+from src.config import SUSPICIOUS, TRAINING, OANC
 import string
 import pprint
 
