@@ -44,7 +44,6 @@ class VectorAnaliser:
         self.arr_suspect_overlap = []
         self.dic = pyphen.Pyphen(lang='en_GB')
         self.coca_freq_dict = Helper.setup_coca_dictionary()
-        self.missed_words = []
 
     def tokenize_corpuses(self, file_name):
         """
@@ -88,7 +87,7 @@ class VectorAnaliser:
         print "\nCreating dump in unigram_tagger.pickle..."
         Helper.create_dump(pos_tagger, TAGGER_DUMP)
 
-    def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
+    def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, arr_missed_words, verbose=False):
         """
         Main method for computing features of the text.
         Iterates words in sentences and computes:
@@ -142,8 +141,8 @@ class VectorAnaliser:
                 # big wiki freq dist.
                 if word_freq_wiki_corpus == 0:
                     if word not in self.coca_freq_dict.keys():
-                        if word not in self.missed_words:
-                            self.missed_words.append(word)
+                        if word not in arr_missed_words:
+                            arr_missed_words.append(word)
                         word_freq_wiki_corpus = 1
                     else: 
                         word_freq_wiki_corpus = self.coca_freq_dict[word]
@@ -207,7 +206,7 @@ class VectorAnaliser:
 
         return Helper.normalize_vector([toReturn])
 
-    def analize_file(self, file_item, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
+    def analize_file(self, file_item, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, arr_missed_words):
         # Most common word in a big corpus.
         # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
         most_common_word_freq = self.tokenized.most_common()[0][1]
@@ -232,7 +231,7 @@ class VectorAnaliser:
         # computing the document mean vector
         print "\n==========\nanalizing %s" % (file_item)
         print "\nComputing reference_vector"
-        doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist, True)
+        doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist, arr_missed_words, True)
         print "\nComputing features"
         for index, sentence in enumerate(sentences):
             """
@@ -393,14 +392,14 @@ class VectorAnaliser:
             print '=-=arr_overlap', self.arr_overlap
             print '=-arr_suspect_overlap', self.arr_suspect_overlap
 
-    def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
+    def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, arr_missed_words):
         '''
         Just a wrapper so that we can multi-process.
         '''
         for f in arr_files:
-            self.analize_file(f, k, arr_mean_precision, arr_mean_recall, arr_mean_f1)
+            self.analize_file(f, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, arr_missed_words)
 
-    def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
+    def vectorise(self, corpus, coeficient=12, should_tokenize_corpuses=False):
         """
         Main method for vectorising the corpus. 
         """
@@ -435,8 +434,9 @@ class VectorAnaliser:
         arr_mean_precision = manager.list()
         arr_mean_recall = manager.list()
         arr_mean_f1 = manager.list()
-        p1 = Process(target=self.multi_process_array, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
-        p2 = Process(target=self.multi_process_array, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
+        arr_missed_words = manager.list()
+        p1 = Process(target=self.multi_process_array, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, arr_missed_words))
+        p2 = Process(target=self.multi_process_array, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, arr_missed_words))
        
         p1.start()
         p2.start()
@@ -449,13 +449,12 @@ class VectorAnaliser:
             #     print "\nNo plagiate from xml for %s" % (file_item)
 
             # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
-        pdb.set_trace()
         print "\n============TOTAL================="
         print "precision: ", np.mean(np.array(arr_mean_precision))
         print "recall: ", np.mean(np.array(arr_mean_recall))
         print "f1: ", np.mean(np.array(arr_mean_f1))
         print "\n============Missed words=========="
-        print self.missed_words
+        print arr_missed_words
 
 
  
