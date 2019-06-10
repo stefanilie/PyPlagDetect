@@ -108,7 +108,7 @@ class VectorAnaliser:
         asl = [0] * len(sentences) # average sentence length
         awps = [0] * len(sentences) # average words per sentence
         hapax = 0 # hapax legomena value
-        dis_legomena = 0 # hapax dislegomane value
+        # dis_legomena = 0 # hapax dislegomane value
         awd =  0 # average word diversity (no unique words/no words)
         aspw = [] #average syllable count per word
         fre = 0 # flesch reading ease 
@@ -154,8 +154,8 @@ class VectorAnaliser:
                     continue
                 item_index = suspicious_freq_dist.keys().index(word)
 
-                if word_freq == 2:
-                    dis_legomena += 1
+                # if word_freq == 2:
+                #     dis_legomena += 1
 
                 # computing number of occurances 
                 # awf[item_index] = log(float(most_common_word_freq)/word_freq) / log(2)
@@ -192,7 +192,7 @@ class VectorAnaliser:
         toReturn.append(np.average(aspw))
         toReturn.append(np.average(awf))
         toReturn.append(hapax)
-        toReturn.append(dis_legomena)
+        # toReturn.append(dis_legomena)
 
         toReturn.append(fre)
         toReturn.append(gre)
