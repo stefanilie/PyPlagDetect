@@ -1,6 +1,7 @@
 import os
 import pdb
 import sys
+import time
 import pickle
 import pyphen
 import string
@@ -420,7 +421,9 @@ class VectorAnaliser:
         for f in arr_files:
             self.analize_file(f, k, arr_mean_precision, arr_mean_recall, arr_mean_f1)
 
-    def vectorise(self, corpus, coeficient=4, custom_mode=False):
+    def vectorise(self, corpus, coeficient=6, custom_mode=False):
+        start_time = time.time()
+
         """
         Main method for vectorising the corpus. 
         @param corpus:
@@ -434,7 +437,6 @@ class VectorAnaliser:
         # Most common word in a big corpus.
         # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
         most_common_word_freq = self.tokenized.most_common()[0][1]
-
         # temporary value for k.
         # will be changed after developing a learning algorithm.
         k=coeficient
@@ -453,13 +455,14 @@ class VectorAnaliser:
 
         p1.join()
         p2.join()
-
+        
+        print "--- Execution time: %s seconds ---" % (time.time() - start_time)
         pdb.set_trace()
-        print "\n============TOTAL================="
+        print "\n=================TOTAL================="
         print "precision: ", np.mean(np.array(arr_mean_precision))
         print "recall: ", np.mean(np.array(arr_mean_recall))
         print "f1: ", np.mean(np.array(arr_mean_f1))
-        print "\n============Missed words=========="
+        print "\n============Missed words============"
         print self.missed_words
 
 
