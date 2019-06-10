@@ -29,9 +29,9 @@ class VectorAnaliser:
     """
     Constructor
     """
-    def __init__(self, corpus, tagger, stop_words):
+    def __init__(self, corpus, stop_words):
         self.corpus = corpus
-        self.tagger = tagger
+        # self.tagger = tagger
         self.stop_words = stop_words
         self.tokenized = []
         self.suspect_corpus_tokenized = None
@@ -59,7 +59,7 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(self.corpus, self.stop_words)
         Helper.create_dump(self.tokenized, file_name)
 
-    def train_unigram_tagger(self, TAGGER_DUMP):
+    def train_unigram_tagger(self):
         '''
         Trains an unigram tagger based on OANC.
         Exports data to a dump file in the dumps folder.
@@ -86,7 +86,7 @@ class VectorAnaliser:
         print "\Training tagger..."     
         pos_tagger = UnigramTagger(train=toTag, model=('effect', 'NN'), verbose=True)
         print "\nCreating dump in unigram_tagger.pickle..."
-        Helper.create_dump(pos_tagger, TAGGER_DUMP)
+        Helper.create_dump(pos_tagger, 'unigram_tagger.pickle')
 
     def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
         """
@@ -382,6 +382,7 @@ class VectorAnaliser:
         """
         Compares the paragraphs detected by the algorithm 
         with the ones provided by the training corpus.
+        @return: TODO: number of correct detected chars.
         """
         result_analizer = ResultsAnalyzer(self.corpus, file_item)
         xml_data = result_analizer.get_offset_from_xml()
@@ -390,8 +391,6 @@ class VectorAnaliser:
             self.arr_suspect_offset = result_analizer.chunks_to_offset(dict_offset_index, suspect_indexes)
 
             self.arr_overlap, self.arr_suspect_overlap = result_analizer.compare_offsets(self.arr_plag_offset, self.arr_suspect_offset)
-            print '=-=arr_overlap', self.arr_overlap
-            print '=-arr_suspect_overlap', self.arr_suspect_overlap
 
     def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
         '''
@@ -403,28 +402,34 @@ class VectorAnaliser:
     def vectorise(self, corpus, coeficient=4, should_tokenize_corpuses=False):
         """
         Main method for vectorising the corpus. 
+        @param corpus:
         """
+        # TODO: change these to constants
+        # file_name = "tokenized.pickle"
        
         # check if tokenized is done.
         if not len(self.tokenized) and not should_tokenize_corpuses:
-            print "\nImporting wikipedia dump..."
+            print "\nReading wikipedia dump..."
             self.tokenized = Helper.read_dump(WIKI_DUMP)
             # print "\nImporting dump..."
             # self.tokenized = Helper.read_dump(SMALL_DUMP)
             # TODO: replace with the UnigramTagger when It will work.
             # self.tagger = Helper.read_dump(TAGGER_DUMP)
-            # pdb.set_trace()
 
         elif not len(self.tokenized) and should_tokenize_corpuses:
             self.tokenize_corpuses(WIKI_DUMP)
-            self.train_unigram_tagger(TAGGER_DUMP)
-            print "\nTokenizing and training finished succesfully!"
-            sys.exit()
+            # self.train_unigram_tagger(TAGGER_DUMP)
+            # print "\nTokenizing and training finished succesfully!"
+            # sys.exit()
 
         # Tokenizing suspicious corpus and getting most common from HUGE corpus.
         files = corpus.fileids()
         # self.suspect_corpus_tokenized = Helper.tokenize_corpus(corpus, self.stop_words, with_stop_words=True)
         
+        # Most common word in a big corpus.
+        # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
+        most_common_word_freq = self.tokenized.most_common()[0][1]
+
         # temporary value for k.
         # will be changed after developing a learning algorithm.
         k=coeficient
@@ -443,12 +448,7 @@ class VectorAnaliser:
 
         p1.join()
         p2.join()
-        # for file_item in files:
-        #     self.analize_file(file_item, k)
-            # else:
-            #     print "\nNo plagiate from xml for %s" % (file_item)
 
-            # Helper.precision(arr_suspect_chunks, dict_suspect_char_count)
         pdb.set_trace()
         print "\n============TOTAL================="
         print "precision: ", np.mean(np.array(arr_mean_precision))
