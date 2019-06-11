@@ -3,14 +3,14 @@ import re
 import sys
 import math
 import nltk
-from src.config import SUSPICIOUS, TRAINING, OANC
 import string
 
-from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import stopwords
+from nltk.tag import UnigramTagger
 from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict, treebank
-from nltk.tag import UnigramTagger
+from nltk.corpus.reader import PlaintextCorpusReader
+from src.config import SUSPICIOUS, TRAINING, OANC, SUSPICIOUS_DOCUMENTS
 
 from src.vectorise import VectorAnaliser
 # load the resources
@@ -27,12 +27,6 @@ def exitWithMessage(message):
 
 def main():
     # downloadNLTKResources()
-
-    # setting the PATH
-    os.chdir(SUSPICIOUS)
-
-    # initialising the corpus reader to the docs path
-    corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
 
     # setting stopwords
     stopWords = set(stopwords.words('english'))
@@ -62,8 +56,55 @@ def main():
         vector_analizer = VectorAnaliser(trainingCorpusReader, stopWords)
         vector_analizer.should_tokenize(should_tokenize_corpuses=True)
     elif decision==2:
+        isReady = False
+        decision = ''
+        print "\nPlease choose folder to analize:"
+        while(not isReady):
+            print "1. /suspicious: (21 files, 2 without real plag data)"
+            print "2. /suspicious-documents: PAN 2009 corpus"
+            try:
+                decision = raw_input("Choose mode: ")
+                decision = int(decision)
+            except ValueError:
+                print "Option '{0}' doesn't exist.".format(decision)
+            if decision not in [1, 2, 3]:
+                print "Option '{0}' doesn't exist.".format(decision)
+            else:
+                isReady = True
+
+        if decision == 1:
+                # setting the PATH
+            os.chdir(SUSPICIOUS)
+
+            # initialising the corpus reader to the docs path
+            corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
+        elif decision == 2: 
+                # setting the PATH
+            os.chdir(SUSPICIOUS_DOCUMENTS)
+
+            # initialising the corpus reader to the docs path
+            corpusReader = PlaintextCorpusReader(SUSPICIOUS_DOCUMENTS, '.*\.txt')
+
+        isReady = False
+        decision = ''
+        print "\nPlease choose an mode:"
+        while(not isReady):
+            print "1. Single thread"
+            print "2. Multi-threading"
+            try:
+                decision = raw_input("Choose mode: ")
+                decision = int(decision)
+            except ValueError:
+                print "Option '{0}' doesn't exist.".format(decision)
+            if decision not in [1, 2, 3]:
+                print "Option '{0}' doesn't exist.".format(decision)
+            else:
+                isReady = True
+
+        multiprocessing = True if decision == 2 else False
+
         vector_analizer = VectorAnaliser(corpusReader, stopWords)
-        vector_analizer.vectorise(corpusReader)
+        vector_analizer.vectorise(corpusReader, multiprocessing=multiprocessing)
     elif decision==3:
         vector_analizer = VectorAnaliser(corpusReader, stopWords, custom_mode=True)
         vector_analizer.vectorise(corpusReader)

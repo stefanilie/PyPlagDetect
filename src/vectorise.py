@@ -19,12 +19,12 @@ from compiler.ast import flatten
 from nltk.tag import UnigramTagger
 from nltk.probability import FreqDist
 from sacremoses import MosesDetokenizer
-from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP, OANC
 from multiprocessing import Process, Manager
 from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
+from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP, OANC, SUSPICIOUS_DOCUMENTS
 
 class VectorAnaliser:
     def __init__(self, corpus, stop_words, custom_mode=False):
@@ -53,8 +53,9 @@ class VectorAnaliser:
         if not len(self.tokenized) and not should_tokenize_corpuses:
             print "\nReading wikipedia dump..."
             self.tokenized = Helper.read_dump(WIKI_DUMP)
+            print "\nReading UnigramTagger dump..."
             # TODO: replace with the UnigramTagger when It will work.
-            # self.tagger = Helper.read_dump(TAGGER_DUMP)
+            self.tagger = Helper.read_dump(TAGGER_DUMP)
 
         elif not len(self.tokenized) and should_tokenize_corpuses:
             # self.tokenize_corpuses(WIKI_DUMP)
@@ -62,7 +63,7 @@ class VectorAnaliser:
             print "\nTokenizing and training finished succesfully!"
             sys.exit()  
 
-    def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
+    def multi_process_files(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
         """
         Just a wrapper so that we can multi-process.
         """
@@ -161,12 +162,12 @@ class VectorAnaliser:
             precision = 0
             f1 = 0
             if len(self.arr_plag_offset) == 0 and len(self.arr_suspect_offset) == 0:
-                # arr_mean_recall.append(1)
-                # arr_mean_precision.append(1)
-                # arr_mean_f1.append(1)
-                # print "\n%s precision: " % (file_item), 1
-                # print "%s recall: " % (file_item), 1
-                # print "%s f1: " % (file_item), 1
+                arr_mean_recall.append(1)
+                arr_mean_precision.append(1)
+                arr_mean_f1.append(1)
+                print "\n%s precision: " % (file_item), 1
+                print "%s recall: " % (file_item), 1
+                print "%s f1: " % (file_item), 1
                 print "\n%s: No plagiarism detected and none existing" % (file_item)
             else: 
                 # computing scores
@@ -359,7 +360,7 @@ class VectorAnaliser:
                 print "Error at file %s" %(file_item)
 
         print "\Training tagger..." 
-        pos_tagger = UnigramTagger(model=(toTag), verbose=True)
+        pos_tagger = UnigramTagger(toTag)
 
         print "\nCreating dump in unigram_tagger.pickle..."
         Helper.create_dump(pos_tagger, file_name)
@@ -371,9 +372,13 @@ class VectorAnaliser:
         arr_pos=[]
         for sentence in sentences:
             # TODO: change to use this instead of default pos_tag
-            # tagged_sents = self.tagger.tag(sentence)
             # pdb.set_trace()
-            tagged_sents = pos_tag(sentence)
+            tagged_sents = self.tagger.tag(sentence)
+            # pdb.set_trace()
+            # tagged_sents = pos_tag(sentence)
+
+            # check if tagged_sents works well
+            # pdb.set_trace()
             tagged_sents = self.create_pos_dict(tagged_sents)
             
             # append to an array all objects
@@ -467,7 +472,7 @@ class VectorAnaliser:
             print "\nPossible plagiarised passages for %s:" % (file_item)
             self.pretty_printer.pprint(passages)
            
-    def vectorise(self, corpus, coeficient=6, custom_mode=False):
+    def vectorise(self, corpus, coeficient=6, custom_mode=False, multiprocessing=True):
 
         """
         Main method for vectorising the corpus. 
@@ -490,38 +495,54 @@ class VectorAnaliser:
 
         k=coeficient
 
-        # initialising multi-threading
-        manager = Manager()
+        if multiprocessing:
+            # initialising multi-threading
+            manager = Manager()
 
-        # spliting the files into two
-        first_half = files[:len(files)/2]
-        second_half = files[len(files)/2:]
+            # spliting the files into two
+            first_half = files[:len(files)/2]
+            second_half = files[len(files)/2:]
+            
+            # creating shared lists
+            # multi-processing doesn't support global variables. 
+            arr_mean_precision = manager.list()
+            arr_mean_recall = manager.list()
+            arr_mean_f1 = manager.list()
+
+            # defining processes
+            p1 = Process(target=self.multi_process_files, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
+            p2 = Process(target=self.multi_process_files, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
         
-        # creating shared lists
-        # multi-processing doesn't support global variables. 
-        arr_mean_precision = manager.list()
-        arr_mean_recall = manager.list()
-        arr_mean_f1 = manager.list()
+            # starting processes
+            p1.start()
+            p2.start()
 
-        # defining processes
-        p1 = Process(target=self.multi_process_array, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
-        p2 = Process(target=self.multi_process_array, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
-       
-        # starting processes
-        p1.start()
-        p2.start()
+            # mantaining processes
+            p1.join()
+            p2.join()
+            
+            # printing results
+            print "\n=================TOTAL================="
+            print "precision: ", np.mean(np.array(arr_mean_precision))
+            print "recall: ", np.mean(np.array(arr_mean_recall))
+            print "f1: ", np.mean(np.array(arr_mean_f1))
 
-        # mantaining processes
-        p1.join()
-        p2.join()
-        
-        # printing results
-        print "\n=================TOTAL================="
-        print "precision: ", np.mean(np.array(arr_mean_precision))
-        print "recall: ", np.mean(np.array(arr_mean_recall))
-        print "f1: ", np.mean(np.array(arr_mean_f1))
+            # printing execution time
+            print "--- Execution time: %s seconds ---" % (time.time() - start_time)
 
-        # printing execution time
-        print "--- Execution time: %s seconds ---" % (time.time() - start_time)
+        else:
+            arr_mean_precision = []
+            arr_mean_recall = []
+            arr_mean_f1 = []
+            
+            self.multi_process_files(files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1)
 
- 
+            # printing results
+            print "\n=================TOTAL================="
+            print "precision: ", np.mean(np.array(arr_mean_precision))
+            print "recall: ", np.mean(np.array(arr_mean_recall))
+            print "f1: ", np.mean(np.array(arr_mean_f1))
+
+            # printing execution time
+            print "--- Execution time: %s seconds ---" % (time.time() - start_time)
+
