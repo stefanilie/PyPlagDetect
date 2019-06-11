@@ -37,11 +37,6 @@ def main():
     # setting stopwords
     stopWords = set(stopwords.words('english'))
 
-    # Training a unigram part of speech tagger
-    # TODO: train this tagger with a huge corpus.
-    # train_sents = treebank.tagged_sents()
-    # tagger = UnigramTagger(train_sents)
-
     isReady = False
     decision = ''
 
