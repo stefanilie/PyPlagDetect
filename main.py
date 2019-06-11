@@ -72,39 +72,45 @@ def main():
             else:
                 isReady = True
 
-        if decision == 1:
-                # setting the PATH
-            os.chdir(SUSPICIOUS)
+        # if decision == 1:
+        #         # setting the PATH
+        #     os.chdir(SUSPICIOUS)
 
-            # initialising the corpus reader to the docs path
-            corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
-        elif decision == 2: 
-                # setting the PATH
-            os.chdir(SUSPICIOUS_DOCUMENTS)
+        #     # initialising the corpus reader to the docs path
+        #     corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
+        # elif decision == 2: 
+            #     # setting the PATH
+            # os.chdir(SUSPICIOUS_DOCUMENTS)
 
-            # initialising the corpus reader to the docs path
-            corpusReader = PlaintextCorpusReader(SUSPICIOUS_DOCUMENTS, '.*\.txt')
+            # # initialising the corpus reader to the docs path
+            # corpusReader = PlaintextCorpusReader(SUSPICIOUS_DOCUMENTS, '.*\.txt')
 
         isReady = False
-        decision = ''
+        multi = ''
         print "\nPlease choose an mode:"
         while(not isReady):
             print "1. Single thread"
             print "2. Multi-threading"
             try:
-                decision = raw_input("Choose mode: ")
-                decision = int(decision)
+                multi = raw_input("Choose mode: ")
+                multi = int(multi)
             except ValueError:
-                print "Option '{0}' doesn't exist.".format(decision)
-            if decision not in [1, 2, 3]:
-                print "Option '{0}' doesn't exist.".format(decision)
+                print "Option '{0}' doesn't exist.".format(multi)
+            if multi not in [1, 2, 3]:
+                print "Option '{0}' doesn't exist.".format(multi)
             else:
                 isReady = True
 
-        multiprocessing = True if decision == 2 else False
-
-        vector_analizer = VectorAnaliser(corpusReader, stopWords)
-        vector_analizer.vectorise(corpusReader, multiprocessing=multiprocessing)
+        multiprocessing = True if multi == 2 else False
+        if decision == 1:
+            os.chdir(SUSPICIOUS)
+            corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
+        elif decision == 2:
+            os.chdir(SUSPICIOUS_DOCUMENTS)
+            corpusReader = PlaintextCorpusReader(SUSPICIOUS_DOCUMENTS, '.*\.txt')
+        
+            vector_analizer = VectorAnaliser(corpusReader, stopWords)
+            vector_analizer.vectorise(corpusReader, multiprocessing=multiprocessing)
     elif decision==3:
         vector_analizer = VectorAnaliser(corpusReader, stopWords, custom_mode=True)
         vector_analizer.vectorise(corpusReader)

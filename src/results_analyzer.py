@@ -6,7 +6,7 @@ import numpy as np
 from os import listdir
 from compiler.ast import flatten
 from os.path import isfile, join
-from src.config import SUSPICIOUS
+from src.config import SUSPICIOUS, SUSPICIOUS_DOCUMENTS
 from helper import Helper
 
 
@@ -17,7 +17,9 @@ class ResultsAnalyzer:
     self.file_name = file_name
 
   def get_files_in_folder(self):
-    fileids = [f for f in listdir(SUSPICIOUS) if isfile(join(SUSPICIOUS, f))]
+    # TODO: change these to point from main.py
+    # try adding by os.getcurrentdir
+    fileids = [f for f in listdir(SUSPICIOUS_DOCUMENTS) if isfile(join(SUSPICIOUS_DOCUMENTS, f))]
     return fileids
 
   def get_offset_from_xml(self):
@@ -34,7 +36,8 @@ class ResultsAnalyzer:
     else:
       try:
         current_directory=os.getcwd()
-        os.chdir(SUSPICIOUS)
+        # TODO: change this to get folder from main.py
+        os.chdir(SUSPICIOUS_DOCUMENTS)
         
         root_file_name = self.file_name.split('.')[0]
         root_file_name += '.xml'

@@ -11,7 +11,7 @@ from nltk import word_tokenize
 from operator import itemgetter
 from compiler.ast import flatten
 from nltk.probability import FreqDist
-from src.config import SUSPICIOUS, DUMPS
+from src.config import SUSPICIOUS, DUMPS, SUSPICIOUS_DOCUMENTS
 from sklearn.preprocessing import normalize
 from nltk.corpus.util import LazyCorpusLoader
 from sklearn.metrics.pairwise import cosine_similarity
@@ -274,7 +274,8 @@ class Helper:
         tokenized_dump = pickle.load(tokenized_file)
         tokenized_file.close()
 
-        os.chdir(SUSPICIOUS)
+        # TODO: change this to depend on main.py
+        os.chdir(SUSPICIOUS_DOCUMENTS)
 
         return tokenized_dump
 
