@@ -5,7 +5,6 @@ import math
 import nltk
 from src.config import SUSPICIOUS, TRAINING, OANC
 import string
-import pprint
 
 from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import stopwords
@@ -27,7 +26,7 @@ def exitWithMessage(message):
     sys.exit()
 
 def main():
-    # downloadNLTKResources()
+    downloadNLTKResources()
 
     # setting the PATH
     os.chdir(SUSPICIOUS)
@@ -37,10 +36,6 @@ def main():
 
     # setting stopwords
     stopWords = set(stopwords.words('english'))
-
-    # cmdict = cmudict.dict()
-
-    pretty_printer = pprint.PrettyPrinter(indent=2)
 
     # Training a unigram part of speech tagger
     # TODO: train this tagger with a huge corpus.

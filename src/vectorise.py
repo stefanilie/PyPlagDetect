@@ -5,6 +5,7 @@ import time
 import pickle
 import pyphen
 import string
+import pprint
 import numpy as np
 import scipy.stats as sc
 
@@ -47,6 +48,7 @@ class VectorAnaliser:
         self.coca_freq_dict = Helper.setup_coca_dictionary()
         self.missed_words = []
         self.custom_mode = custom_mode
+        self.pretty_printer = pprint.PrettyPrinter(indent=2)
 
     def should_tokenize(self, should_tokenize_corpuses=False):
         # check if tokenized is done.
@@ -411,7 +413,8 @@ class VectorAnaliser:
         elif not xml_data and self.custom_mode ==True:
             passages = result_analizer.chunks_to_passages(dict_offset_index, suspect_indexes)
             print "\nPossible plagiarised passages for %s:" % (file_item)
-            print passages
+            self.pretty_printer.pprint(passages)
+           
 
 
     def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
