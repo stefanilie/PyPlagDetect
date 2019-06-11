@@ -19,55 +19,55 @@ from nltk.corpus.reader.tagged import CategorizedTaggedCorpusReader
 
 class Helper:
 
-    '''
-    Constructor
-    '''
     def __init__(self, corpus, stopWords):
+        """
+        Constructor
+        """
         self.corpus = corpus
         self.stopWords = stopWords
 
-    '''
-    Returns the exact number of words based on the percentage needed.
-    @param words - [array of strings] words in analysed structure.
-    @param percentage - [double] fraction of resource that needs to be extracted.
-    @return [int] exact number of words that have to be taken into account.
-    '''
     @staticmethod
     def get_percentage(words, percentage):
+        """
+        Returns the exact number of words based on the percentage needed.
+        @param words - [array of strings] words in analysed structure.
+        @param percentage - [double] fraction of resource that needs to be extracted.
+        @return [int] exact number of words that have to be taken into account.
+        """
         return int(percentage * len(words))
 
 
-    '''
-    Intersection of two provided lists.
-    @param list1 - [list]
-    @param list2 - [list]
-    @return [list] intersection of the two lists.
-    '''
     @staticmethod
     def get_intersection(list1, list2):
+        """
+        Intersection of two provided lists.
+        @param list1 - [list]
+        @param list2 - [list]
+        @return [list] intersection of the two lists.
+        """
         list1 = flatten(list1)
         list2 = flatten(list2)
 
         return list(set(list1).intersection(set(list2)))
 
-    '''
-    Difference of two provided lists.
-    @param list1 - [list]
-    @param list2 - [list]
-    @return [list] difference of the two lists.
-    '''
     @staticmethod
     def get_difference(list1, list2):
+        """
+        Difference of two provided lists.
+        @param list1 - [list]
+        @param list2 - [list]
+        @return [list] difference of the two lists.
+        """
         list1 = flatten(list1)
         list2 = flatten(list2)
 
         return list(set(list1).difference(set(list2)))
 
-    '''
-    Maps each POS to a number so that we can analyze the text.
-    '''
     @staticmethod
     def switch_pos(x):
+        """
+        Maps each POS to a number so that we can analyze the text.
+        """
         return {
             'NN': 1.0, #noun
             'NNS': 1.5, #noun plural
@@ -114,15 +114,15 @@ class Helper:
             'TO': 17.0
         }.get(x, 0)
 
-    '''
-    Method obtained from
-    https://github.com/ypeels/nltk-book/blob/master/exercises/2.21-syllable-count.py
-    Calculates syllable count for the provided word.
-    @param word - string representing the word.
-    \=======================DEPRECATED========================/
-    '''
     @staticmethod
     def syllables_in_word(word):
+        """
+        Method obtained from
+        https://github.com/ypeels/nltk-book/blob/master/exercises/2.21-syllable-count.py
+        Calculates syllable count for the provided word.
+        @param word - string representing the word.
+        \=======================DEPRECATED========================/
+        """
         flat_dict = dict(cmudict.entries())
         if flat_dict.has_key(word):
             return len([ph for ph in flat_dict[word] if ph.strip(string.letters)])
@@ -130,50 +130,50 @@ class Helper:
             return 0
 
 
-    '''
-    First it calculates the percentage of a feature relative to the bigger one.
-    After this it edits the name of the feature so that it contains
-    the "_percentage" component.
-    @param relative_to - [int] the feature to which we calculate the percentage of
-    the other smaller ones. Example: paragraph_words_count.
-    @param feature - [dict] feature dictionary containing the values to be calculated.
-    '''
     @staticmethod
     def get_feature_percentage(relative_to, feature):
+        """
+        First it calculates the percentage of a feature relative to the bigger one.
+        After this it edits the name of the feature so that it contains
+        the "_percentage" component.
+        @param relative_to - [int] the feature to which we calculate the percentage of
+        the other smaller ones. Example: paragraph_words_count.
+        @param feature - [dict] feature dictionary containing the values to be calculated.
+        """
         dict_reply = {}
         for key, value in feature.iteritems():
             dict_reply.update({str(key)+"_percentage": np.true_divide(100*value, relative_to)})
         return dict_reply
 
-    '''
-    Computes the Term Frequency (TF).
-    @param term - [string] the term who's TF we're computing.
-    @param tokenized_document - [list string] can be either the sentence,
-    the paragraph, or even the entire document. Based on this we calculate the
-    TF for the according instance.
-    @return [int] value of the TF.
-    '''
     @staticmethod
     def compute_TF(term, tokenized_document):
+        """
+        Computes the Term Frequency (TF).
+        @param term - [string] the term who's TF we're computing.
+        @param tokenized_document - [list string] can be either the sentence,
+        the paragraph, or even the entire document. Based on this we calculate the
+        TF for the according instance.
+        @return [int] value of the TF.
+        """
         return 1 + log(tokenized_document.count(term))
 
     @staticmethod
     def get_overlap(a, b):
-      '''
+      """
       Computes the overlap of the provided intervals.
       Returns number of shared items.
-      '''
+      """
       return max(0, min(a[1], b[1]) - max(a[0], b[0]))
 
-    '''
-    Computes the Inverse Term Frequency (IDF) coeficient.
-    IDF = log(Nr of Docs in the Corpus / Nr of Docs in which the word appears).
-    @param term - [string] term to calculate the idf for.
-    @param tokenized_document - [list of list string] it can be document.
-    @return [int] value of the IDF.
-    '''
     @staticmethod
     def compute_IDF(term, tokenized_document):
+        """
+        Computes the Inverse Term Frequency (IDF) coeficient.
+        IDF = log(Nr of Docs in the Corpus / Nr of Docs in which the word appears).
+        @param term - [string] term to calculate the idf for.
+        @param tokenized_document - [list of list string] it can be document.
+        @return [int] value of the IDF.
+        """
         doc_number=0
         # Iterating the paragraphs.
         for doc in tokenized_document:
@@ -181,30 +181,29 @@ class Helper:
                 doc_number += 1
         return log(len(np.true_divide(tokenized_document, doc_number)))
 
-
-    '''
-    Computes the TF-IDF value.
-    @param term - [string] the term to calculate the tf-idf value.
-    @param document - [list of string] document or array of docs that needs to be
-    calculated.
-    @return [int] - value of the computed Tf-Idf
-    '''
     @staticmethod
     def compute_TF_IDF(term, document):
+        """
+        Computes the TF-IDF value.
+        @param term - [string] the term to calculate the tf-idf value.
+        @param document - [list of string] document or array of docs that needs to be
+        calculated.
+        @return [int] - value of the computed Tf-Idf
+        """
         tf = Helper.compute_TF(term, document)
         idf = Helper.compute_IDF(term, document)
         return tf * idf
 
-    '''
-    Tokenizes all files from a corpus.
-    @param corpus - [nltk.corpus]
-    @param stopWords - [nltk.stopWords] array containing all eng stopwords.
-    @param cathegorized - [Boolean] if corpus is categorized or not.
-    @param with_stop_words - [Boolean] if stop words should be excluded or not.
-    @return [list of strings] - tokenized array for all the corpus docs.
-    '''
     @staticmethod
     def tokenize_corpus(corpus, stopWords, cathegorized=False, with_stop_words=False):
+        """
+        Tokenizes all files from a corpus.
+        @param corpus - [nltk.corpus]
+        @param stopWords - [nltk.stopWords] array containing all eng stopwords.
+        @param cathegorized - [Boolean] if corpus is categorized or not.
+        @param with_stop_words - [Boolean] if stop words should be excluded or not.
+        @return [list of strings] - tokenized array for all the corpus docs.
+        """
         print "==========="
         print "Tokenizeing ", corpus
         tokenized = []
@@ -225,24 +224,24 @@ class Helper:
             tokenized = Helper.get_difference(tokenized, stopWords)
         return tokenized
 
-    '''
-    Returns FreqDist of the tokenized suspect file.
-    '''
     @staticmethod
     def tokenize_file(corpus, stopWords, fileId, with_stop_words=False):
+        """
+        Returns FreqDist of the tokenized suspect file.
+        """
         raw = corpus.raw(fileId)
         tokenized = word_tokenize(raw)
         if not with_stop_words:
             tokenized = Helper.get_difference(tokenized, stopWords)
         return FreqDist(tokenized)
 
-    '''
-    Creates data dump for tokenization to destination file.
-    @param tokenized - [list of strings] Tokenized array of words.
-    @param destination - [string] File on which the data will be written.
-    '''
     @staticmethod
     def create_dump(tokenized, destination):
+        """
+        Creates data dump for tokenization to destination file.
+        @param tokenized - [list of strings] Tokenized array of words.
+        @param destination - [string] File on which the data will be written.
+        """
         # saving current directory
         current_directory=os.getcwd()
         
@@ -257,13 +256,14 @@ class Helper:
         # reverting to previous directory
         os.chdir(current_directory)
 
-    '''
-    Reads data dump of tokenized corpus/
-    @param file_name - [string] File name of the data dump.
-    @returns tokenized_dump - [string array] Tokenized words. 
-    '''
     @staticmethod
     def read_dump(file_name):
+        """
+        Reads data dump of tokenized corpus/
+        @param file_name - [string] File name of the data dump.
+        @returns tokenized_dump - [string array] Tokenized words. 
+        """
+
          # saving current directory
         current_directory=os.getcwd()
         
@@ -278,12 +278,12 @@ class Helper:
 
         return tokenized_dump
 
-    '''
-    Finds all consecutive items in array.
-    Returns grouped consecutive items.
-    '''
     @staticmethod
     def find_consecutive_numbers(arr):
+        """
+        Finds all consecutive items in array.
+        Returns grouped consecutive items.
+        """
         toReturn = []
         for k, g in groupby(enumerate(arr), lambda (i, x): i-x):
             toReturn.append(map(itemgetter(1), g))
@@ -292,19 +292,17 @@ class Helper:
 
     @staticmethod
     def normalize_vector(vector):
-        # pdb.set_trace()
-        # return np.linalg.norm(vector)
         return normalize(vector)[0].tolist()
 
-    '''
-    Computes standard deviation for the provided sentences array.
-    @param sent_array - [array] sentence statistics
-    @param cosine_similarity_array - [array] calculated cosine similarity array for all the sentences
-    @param mean - [float] mean cosine similarity
-    @return [float] standard deviation of the for the annalized widow.
-    '''
     @staticmethod
     def stddev(sent_array, cosine_similarity_array, mean):
+        """
+        Computes standard deviation for the provided sentences array.
+        @param sent_array - [array] sentence statistics
+        @param cosine_similarity_array - [array] calculated cosine similarity array for all the sentences
+        @param mean - [float] mean cosine similarity
+        @return [float] standard deviation of the for the annalized widow.
+        """
         sum=0
         print "\nComputing stddev"
         for index, sent in enumerate(sent_array):
@@ -315,22 +313,22 @@ class Helper:
             sum += np.square(np.array(cosine_similarity_array[index]) - np.array(mean))
         return np.sqrt(np.true_divide(1, len(sent_array))*sum)
             
-    '''
-    Decides if annalized part of the document is plagiarised or not.
-    @param cosine_similarity_value - [float] 
-    @param mean - [float]
-    @param stddev - [float]
-    @return [boolean]
-    '''
     @staticmethod
     def trigger_suspect(cosine_similarity_value, mean, stddev):
+        """
+        Decides if annalized part of the document is plagiarised or not.
+        @param cosine_similarity_value - [float] 
+        @param mean - [float]
+        @param stddev - [float]
+        @return [boolean]
+        """
         return cosine_similarity_value < mean - e*stddev
         
     @staticmethod
     def precision(arr_suspect_overlap,arr_suspect_offset):
-        '''
+        """
         true positive / predicted results
-        '''
+        """
         s=0
         if arr_suspect_offset == 0 or arr_suspect_overlap == 0:
             return 0
@@ -341,9 +339,9 @@ class Helper:
        
     @staticmethod
     def recall(arr_overlap, arr_plag_offset):
-        '''
+        """
         true positive/actual results
-        '''
+        """
         s=0
         if arr_plag_offset == 0 or arr_overlap == 0:
             return 0
@@ -385,22 +383,22 @@ class Helper:
 
     @staticmethod
     def compute_flesch_reading_ease(words, syllables, sentences):
-        '''
+        """
         Computes the Flesch reading ease.
-        '''
+        """
         reading_ease = 206.835-1.015 * (np.true_divide(words, sentences)) - 84.6 * (np.true_divide(syllables, words))
         grade_level = 0.39 * (np.true_divide(words, sentences)) + 11.8 * (np.true_divide(syllables, words)) - 15.59
         return reading_ease, grade_level
 
     @staticmethod 
     def setup_coca_dictionary():
-        '''
+        """
         Using data from https://www.english-corpora.org/coca/, 
         it adds the values that the wiki FreqDist doesn't contain.
         Examples include 'a', 'i' or punctuation.
         We decide which has to be mapped here based on the 0 value
         they contain inside the wiki freq dist.
-        '''
+        """
         return {
             'a': 12953004,
             'i': 5936716, 

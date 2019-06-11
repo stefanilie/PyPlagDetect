@@ -63,17 +63,17 @@ class VectorAnaliser:
             sys.exit()
 
     def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
-        '''
+        """
         Just a wrapper so that we can multi-process.
-        '''
+        """
         for f in arr_files:
             self.analize_file(f, k, arr_mean_precision, arr_mean_recall, arr_mean_f1)
 
     def analize_file(self, file_item, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
-        '''
+        """
         Analyzes file by creating windows
         and extracting window features.
-        '''
+        """
 
         # Most common word in a big corpus.
         # most_common_word_freq = FreqDist(self.tokenized).most_common(1)[0][1]
@@ -97,7 +97,10 @@ class VectorAnaliser:
         # tokenizing the words from the sentences 
         sentences = [word_tokenize(sent) for sent in sent_tokenize(self.corpus.raw(fileids=file_item))]
         
-        # computing the document mean vector
+        """
+        Computing the document mean vector
+        calling feature method with all sentences. 
+        """
         print "\n==========\nanalizing %s" % (file_item)
         print "\nComputing reference_vector"
         doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist, True)
@@ -116,12 +119,23 @@ class VectorAnaliser:
             else:
                 arr_sentences = sentences[index-k/2:index+k/2]                    
 
+            # printing progress bar
             Helper.print_progress(index, len(sentences))
+
+            # extracting features
             toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist, False)
+
+            # adding it to the document feature set
             windows_total.append(toAppend)
             
+            # indexing all sentences for easy access
             dict_all_sentences[index] = sentence
 
+            """
+            saving the offset and length of the current sentence.
+            this will be used for overlapping 
+            data from xml with these found here.
+            """
             new_offset = len(self.md.detokenize(sentence))
             offset_counter += new_offset
             dict_offset_index[index] = [offset_counter, new_offset]
@@ -133,11 +147,16 @@ class VectorAnaliser:
         # computing the standard deviation 
         self.standard_deviation = Helper.stddev(windows_total, self.arr_cosine_similarity, self.mean)
 
+        # getting the intervals between which the
+        # suspect passages lay
         arr_suspect_chunks = self.get_suspect_index(sentences)
+
+        # comparing them with the real results
         self.compare_with_xml(file_item, dict_offset_index, arr_suspect_chunks)
 
+        # if we are not just analyzing the file
+        # without evaluating the algorithm
         if self.custom_mode == False:
-            # if self.arr_plag_offset:
             recall = 0
             precision = 0
             f1 = 0
@@ -150,18 +169,153 @@ class VectorAnaliser:
                 # print "%s f1: " % (file_item), 1
                 print "\n%s: No plagiarism detected and none existing" % (file_item)
             else: 
+                # computing scores
                 precision = Helper.precision(self.arr_overlap, self.arr_plag_offset)
                 recall = Helper.recall(self.arr_suspect_overlap, self.arr_suspect_offset)
                 f1 = Helper.granularity_f1(precision, recall, self.arr_overlap)
 
+                # adding them to the mean list
                 arr_mean_recall.append(recall)
                 arr_mean_precision.append(precision)
                 arr_mean_f1.append(f1)
 
+                # printing results for that file.
                 print "\n%s precision: " % (file_item), precision
                 print "%s recall: " % (file_item), recall
                 print "%s f1: " % (file_item), f1
 
+    def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
+        """
+        Main method for computing features of the text.
+        Iterates words in sentences and computes:
+        average word frequency, stopwords,
+        punctuation, POS tags, and pronouns.
+
+        @return normalized feature vector
+        """
+        # create empty vectors for all features
+        # will have length of fdist of the document
+        awf = [0] * len(suspicious_freq_dist) # average word frq
+        pcf = [0] * len(suspicious_freq_dist) # punctuation signs
+        stp = [0] * len(suspicious_freq_dist) # stopwords
+        pos = [0] * len(suspicious_freq_dist) # parts of speech
+        prn = [0] * len(suspicious_freq_dist) # pronouns
+
+        awl = [] # average words length
+        asl = [0] * len(sentences) # average sentence length
+        awps = [0] * len(sentences) # average words per sentence
+        hapax = 0 # hapax legomena value
+        awd =  0 # average word diversity (no unique words/no words)
+        aspw = [] #average syllable count per word
+        fre = 0 # flesch reading ease 
+        gre = 0 # flesch kincaid grade level
+        sha_entr = [] # shanon entropy value
+        toReturn = []
+        
+
+        flat_sent = flatten(sentences)
+        fdist = FreqDist(flat_sent)
+
+        # computing number of hapax legomena
+        hapax = np.true_divide(len(fdist.hapaxes()), len(flat_sent))
+
+        # average word diversity
+        awd = np.true_divide(len(fdist), len(flat_sent))
+
+        # computing array for all POS stored in objects
+        # each object represents a sentence.
+        arr_tagged_pos_per_sent = self.compute_POS(sentences)
+
+        # iterating sentences and then words in them
+        for index, words in enumerate(sentences):
+            if verbose:
+                Helper.print_progress(index, len(sentences))
+            for word in words:
+                word = word.lower()
+                word_freq = suspicious_freq_dist[word]
+                word_freq_wiki_corpus = self.tokenized[word]
+
+                if '-' in word and word_freq_wiki_corpus == 0:
+                        word_freq_wiki_corpus = np.average([self.tokenized[i] for i in word.split('-')])
+
+                # this coveres the cases where the word 
+                # isn't part of the big wiki freq dist.
+                if word_freq_wiki_corpus == 0:
+                    if word not in self.coca_freq_dict.keys():
+                        if word not in self.missed_words:
+                            self.missed_words.append(word)
+                        word_freq_wiki_corpus = 1
+                    else: 
+                        word_freq_wiki_corpus = self.coca_freq_dict[word]
+                
+                if word not in  suspicious_freq_dist.keys():
+                    # this is for some cases where 
+                    # we have words that couldn't be tokenized.
+                    continue
+                item_index = suspicious_freq_dist.keys().index(word)
+
+                # computing window caracteristics.
+                awf[item_index] = floor(log(np.true_divide(most_common_word_freq, word_freq_wiki_corpus))/log(2))
+                # awf[item_index] = floor(log(np.true_divide(word_freq_wiki_corpus, word_freq))/log(2))
+                pcf[item_index] = fdist[word] if word in string.punctuation else 0
+                stp[item_index] = fdist[word] if word in self.stop_words else 0
+                pos[item_index] = arr_tagged_pos_per_sent[index][word]
+
+                # if it's a pronoun, then we take them into account
+                if arr_tagged_pos_per_sent[index][word] == 3.0 or arr_tagged_pos_per_sent[index][word] == 3.5:
+                    prn[item_index] = 1
+                
+                # average word length
+                awl.append(len(word))
+
+                # average sentence length
+                asl[index] += len(word)
+
+                # average syllable count per word
+                aspw.append(len(self.dic.inserted(word).split('-')))
+
+                # shanon entropy
+                sha_entr.append(word_freq*log(word_freq, 2))
+
+            # average words per sentence
+            awps[index] = len(words)
+        
+        # flesch reading ease 
+        # flesch-kincaid grade
+        words = np.sum(awps)
+        syllables = np.sum(aspw)
+        fre, gre = Helper.compute_flesch_reading_ease(words, syllables, len(sentences))
+        
+        sha_entr = sc.entropy(sha_entr, None, 2)
+
+        # normalizing vectors
+        awf = Helper.normalize_vector([awf])
+        pcf = Helper.normalize_vector([pcf])
+        stp = Helper.normalize_vector([stp])
+        pos = Helper.normalize_vector([pos])
+        prn = Helper.normalize_vector([prn])
+
+        # adding data to document data vector
+        toReturn.append(np.average(awl))
+        toReturn.append(np.average(asl))
+        toReturn.append(np.average(awps))
+        toReturn.append(np.average(aspw))
+        toReturn.append(np.average(awf))
+        toReturn.append(hapax)
+
+        toReturn.append(fre)
+        toReturn.append(gre)
+        toReturn.append(sha_entr)
+        toReturn.append(awd)
+        
+        toReturn.extend(awf)
+        toReturn.extend(pcf)
+        toReturn.extend(stp)
+        toReturn.extend(pos)
+        toReturn.extend(prn)
+
+        # normalizing result
+        return Helper.normalize_vector([toReturn])
 
     def tokenize_corpuses(self, file_name):
         """
@@ -177,10 +331,10 @@ class VectorAnaliser:
         Helper.create_dump(self.tokenized, file_name)
 
     def train_unigram_tagger(self):
-        '''
+        """
         Trains an unigram tagger based on OANC.
         Exports data to a dump file in the dumps folder.
-        '''
+        """
         toTag = []
         files = self.corpus.fileids()
         print "\nExtracting words from files..."
@@ -204,125 +358,6 @@ class VectorAnaliser:
         pos_tagger = UnigramTagger(train=toTag, model=('effect', 'NN'), verbose=True)
         print "\nCreating dump in unigram_tagger.pickle..."
         Helper.create_dump(pos_tagger, 'unigram_tagger.pickle')
-
-    def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
-        """
-        Main method for computing features of the text.
-        Iterates words in sentences and computes:
-        average word frequency, stopwords,
-        punctuation, POS tags, and pronouns.
-
-        @return normalized feature vector
-        """
-        # create empty vectors for all features
-        # will have length of fdist of the document
-        awf = [0] * len(suspicious_freq_dist) # average word frq
-        pcf = [0] * len(suspicious_freq_dist) # punctuation signs
-        stp = [0] * len(suspicious_freq_dist) # stopwords
-        pos = [0] * len(suspicious_freq_dist) # parts of speech
-        prn = [0] * len(suspicious_freq_dist) # pronouns
-        awl = [] # average words length
-        asl = [0] * len(sentences) # average sentence length
-        awps = [0] * len(sentences) # average words per sentence
-        hapax = 0 # hapax legomena value
-        # dis_legomena = 0 # hapax dislegomane value
-        awd =  0 # average word diversity (no unique words/no words)
-        aspw = [] #average syllable count per word
-        fre = 0 # flesch reading ease 
-        gre = 0 # flesch kincaid grade level
-        sha_entr = [] # shanon entropy value
-        toReturn = []
-        
-
-        flat_sent = flatten(sentences)
-        fdist = FreqDist(flat_sent)
-        hapax = np.true_divide(len(fdist.hapaxes()), len(flat_sent))
-        awd = np.true_divide(len(fdist), len(flat_sent))
-
-        # computing array for all POS stored in objects
-        # each object represents a sentence.
-        arr_tagged_pos_per_sent = self.compute_POS(sentences)
-
-        # iterating sentences and then words in them
-        for index, words in enumerate(sentences):
-            if verbose:
-                Helper.print_progress(index, len(sentences))
-            for word in words:
-                word = word.lower()
-                word_freq = suspicious_freq_dist[word]
-                word_freq_wiki_corpus = self.tokenized[word]
-
-                if '-' in word and word_freq_wiki_corpus == 0:
-                        word_freq_wiki_corpus = np.average([self.tokenized[i] for i in word.split('-')])
-
-                # this coveres the cases where the word isn't part of the 
-                # big wiki freq dist.
-                if word_freq_wiki_corpus == 0:
-                    if word not in self.coca_freq_dict.keys():
-                        if word not in self.missed_words:
-                            self.missed_words.append(word)
-                        word_freq_wiki_corpus = 1
-                    else: 
-                        word_freq_wiki_corpus = self.coca_freq_dict[word]
-                
-                if word not in  suspicious_freq_dist.keys():
-                    # this is for some weird cases where we have words that
-                    # couldn't be tokenized.
-                    continue
-                item_index = suspicious_freq_dist.keys().index(word)
-
-                # if word_freq == 2:
-                #     dis_legomena += 1
-
-                # computing number of occurances 
-                # awf[item_index] = log(float(most_common_word_freq)/word_freq) / log(2)
-
-                # awf[item_index] = floor(log(np.true_divide(most_common_word_freq, word_freq_wiki_corpus))/log(2))
-                awf[item_index] = floor(log(np.true_divide(word_freq_wiki_corpus, word_freq))/log(2))
-                pcf[item_index] = fdist[word] if word in string.punctuation else 0
-                stp[item_index] = fdist[word] if word in self.stop_words else 0
-                pos[item_index] = arr_tagged_pos_per_sent[index][word]
-
-                # if it's a pronoun, then we take them into account
-                if arr_tagged_pos_per_sent[index][word] == 3.0 or arr_tagged_pos_per_sent[index][word] == 3.5:
-                    prn[item_index] = 1
-                awl.append(len(word))
-                asl[index] += len(word)
-                aspw.append(len(self.dic.inserted(word).split('-')))
-                sha_entr.append(word_freq*log(word_freq, 2))
-            awps[index] = len(words)
-
-        words = np.sum(awps)
-        syllables = np.sum(aspw)
-        fre, gre = Helper.compute_flesch_reading_ease(words, syllables, len(sentences))
-        sha_entr = sc.entropy(sha_entr, None, 2)
-
-        awf = Helper.normalize_vector([awf])
-        pcf = Helper.normalize_vector([pcf])
-        stp = Helper.normalize_vector([stp])
-        pos = Helper.normalize_vector([pos])
-        prn = Helper.normalize_vector([prn])
-
-        toReturn.append(np.average(awl))
-        toReturn.append(np.average(asl))
-        toReturn.append(np.average(awps))
-        toReturn.append(np.average(aspw))
-        toReturn.append(np.average(awf))
-        toReturn.append(hapax)
-        # toReturn.append(dis_legomena)
-
-        toReturn.append(fre)
-        toReturn.append(gre)
-        toReturn.append(sha_entr)
-        toReturn.append(awd)
-        
-        toReturn.extend(awf)
-        toReturn.extend(pcf)
-        toReturn.extend(stp)
-        toReturn.extend(pos)
-        toReturn.extend(prn)
-
-        return Helper.normalize_vector([toReturn])
 
     def compute_POS(self, sentences):
         """

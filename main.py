@@ -16,9 +16,9 @@ from src.vectorise import VectorAnaliser
 # load the resources
 
 def downloadNLTKResources():
-    '''
+    """
     Downloads all of the nltk resources.
-    '''
+    """
     nltk.download('all')
 
 def exitWithMessage(message): 
@@ -26,7 +26,7 @@ def exitWithMessage(message):
     sys.exit()
 
 def main():
-    downloadNLTKResources()
+    # downloadNLTKResources()
 
     # setting the PATH
     os.chdir(SUSPICIOUS)
