@@ -19,7 +19,7 @@ from compiler.ast import flatten
 from nltk.tag import UnigramTagger
 from nltk.probability import FreqDist
 from sacremoses import MosesDetokenizer
-from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP
+from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP, OANC
 from multiprocessing import Process, Manager
 from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
@@ -57,10 +57,10 @@ class VectorAnaliser:
             # self.tagger = Helper.read_dump(TAGGER_DUMP)
 
         elif not len(self.tokenized) and should_tokenize_corpuses:
-            self.tokenize_corpuses(WIKI_DUMP)
+            # self.tokenize_corpuses(WIKI_DUMP)
             self.train_unigram_tagger(TAGGER_DUMP)
             print "\nTokenizing and training finished succesfully!"
-            sys.exit()
+            sys.exit()  
 
     def multi_process_array(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
         """
@@ -330,7 +330,7 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(self.corpus, self.stop_words)
         Helper.create_dump(self.tokenized, file_name)
 
-    def train_unigram_tagger(self):
+    def train_unigram_tagger(self, file_name):
         """
         Trains an unigram tagger based on OANC.
         Exports data to a dump file in the dumps folder.
@@ -342,22 +342,27 @@ class VectorAnaliser:
             Helper.print_progress(index, len(files))
             paras = self.corpus.paras(file_item)
         
-            for sentences in paras:
-                st = flatten(sentences)
-                training_tags = []
-                for word in st:
-                    if '_' in word:
-                        if len(word.split('_')) > 2:
-                            continue
-                        w, pos = word.split('_')
-                        if w != '' and pos != '':
-                            training_tags.append((w, pos))
-                if len(toTag) > 0:
-                    toTag.append(training_tags) 
-        print "\Training tagger..."     
-        pos_tagger = UnigramTagger(train=toTag, model=('effect', 'NN'), verbose=True)
+            try:
+                for sentences in paras:
+                    st = flatten(sentences)
+                    training_tags = []
+                    for word in st:
+                        if '_' in word:
+                            if len(word.split('_')) > 2:
+                                continue
+                            w, pos = word.split('_')
+                            if w != '' and pos != '':
+                                training_tags.append((w, pos))
+                    if len(training_tags) > 0:
+                        toTag.append(training_tags)
+            except:
+                print "Error at file %s" %(file_item)
+
+        print "\Training tagger..." 
+        pos_tagger = UnigramTagger(model=(toTag), verbose=True)
+
         print "\nCreating dump in unigram_tagger.pickle..."
-        Helper.create_dump(pos_tagger, 'unigram_tagger.pickle')
+        Helper.create_dump(pos_tagger, file_name)
 
     def compute_POS(self, sentences):
         """

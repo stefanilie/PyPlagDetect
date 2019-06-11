@@ -58,7 +58,7 @@ def main():
             isReady = True
 
     if decision==1:
-        trainingCorpusReader=PlaintextCorpusReader(TRAINING, '.*\.txt')
+        trainingCorpusReader=PlaintextCorpusReader(OANC, '.*\.txt')
         vector_analizer = VectorAnaliser(trainingCorpusReader, stopWords)
         vector_analizer.should_tokenize(should_tokenize_corpuses=True)
     elif decision==2:
