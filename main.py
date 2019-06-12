@@ -87,7 +87,7 @@ def main():
 
         isReady = False
         multi = ''
-        print "\nPlease choose an mode:"
+        print "\nPlease choose a mode:"
         while(not isReady):
             print "1. Single thread"
             print "2. Multi-threading"

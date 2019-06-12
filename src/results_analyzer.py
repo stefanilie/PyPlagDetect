@@ -53,7 +53,6 @@ class ResultsAnalyzer:
       except:
         print "\nFile %s not present in folder" %(root_file_name)
 
-
   def get_plagiarised(self, xml_data):
     '''
     Returns plagiarized paragraph from suspicious file
