@@ -105,6 +105,9 @@ def main():
         if decision == 1:
             os.chdir(SUSPICIOUS)
             corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
+            
+            vector_analizer = VectorAnaliser(corpusReader, stopWords)
+            vector_analizer.vectorise(corpusReader)
         elif decision == 2:
             os.chdir(SUSPICIOUS_DOCUMENTS)
             corpusReader = PlaintextCorpusReader(SUSPICIOUS_DOCUMENTS, '.*\.txt')

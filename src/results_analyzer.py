@@ -17,9 +17,8 @@ class ResultsAnalyzer:
     self.file_name = file_name
 
   def get_files_in_folder(self):
-    # TODO: change these to point from main.py
-    # try adding by os.getcurrentdir
-    fileids = [f for f in listdir(SUSPICIOUS_DOCUMENTS) if isfile(join(SUSPICIOUS_DOCUMENTS, f))]
+    current_directory = os.getcwd()
+    fileids = [f for f in listdir(current_directory) if isfile(join(current_directory, f))]
     return fileids
 
   def get_offset_from_xml(self):
@@ -36,8 +35,8 @@ class ResultsAnalyzer:
     else:
       try:
         current_directory=os.getcwd()
-        # TODO: change this to get folder from main.py
-        os.chdir(SUSPICIOUS_DOCUMENTS)
+
+        os.chdir(current_directory)
         
         root_file_name = self.file_name.split('.')[0]
         root_file_name += '.xml'

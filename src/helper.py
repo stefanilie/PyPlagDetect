@@ -274,8 +274,7 @@ class Helper:
         tokenized_dump = pickle.load(tokenized_file)
         tokenized_file.close()
 
-        # TODO: change this to depend on main.py
-        os.chdir(SUSPICIOUS_DOCUMENTS)
+        os.chdir(current_directory)
 
         return tokenized_dump
 
