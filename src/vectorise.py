@@ -8,6 +8,7 @@ import string
 import pprint
 import numpy as np
 import scipy.stats as sc
+from tqdm import tqdm
 
 from math import log, floor
 from numpy import dot
@@ -25,6 +26,11 @@ from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
 from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP, OANC, SUSPICIOUS_DOCUMENTS, PLOTS
+
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
 
 class VectorAnaliser:
     def __init__(self, corpus, stop_words, custom_mode=False):
@@ -106,7 +112,7 @@ class VectorAnaliser:
         print "\nComputing reference_vector"
         doc_mean_vector = self.feature_extraction(sentences, most_common_word_freq, suspicious_freq_dist, True)
         print "\nComputing features"
-        for index, sentence in enumerate(sentences):
+        for index, sentence in enumerate(tqdm(sentences)):
             """
             Window is represented by all k+1 items.
             Until index is equal to k/2, it will jump.
@@ -120,8 +126,8 @@ class VectorAnaliser:
             else:
                 arr_sentences = sentences[index-k/2:index+k/2]                    
 
-            # printing progress bar
-            Helper.print_progress(index, len(sentences))
+            # # printing progress bar
+            # Helper.print_progress(index, len(sentences))
 
             # extracting features
             toAppend = self.feature_extraction(arr_sentences, most_common_word_freq, suspicious_freq_dist, False)
@@ -191,6 +197,40 @@ class VectorAnaliser:
     def kmeans(self, vector, file_name, K=2):
         current_directory = os.getcwd()
         os.chdir(PLOTS)
+        arr = (np.array(vector))
+
+        # mean normalization of the data . converting into normal distribution having mean=0 , -0.1<x<0.1
+        sc = StandardScaler()
+        x = sc.fit_transform(arr)
+
+        # Breaking into principle components
+        pca = PCA(n_components=2)
+        components = (pca.fit_transform(x))
+        # Applying kmeans algorithm for finding centroids
+
+        kmeans = KMeans(n_clusters=K, n_jobs=-1)
+        kmeans.fit_transform(components)
+        print("labels: ", kmeans.labels_)
+        centers = kmeans.cluster_centers_
+
+        # lables are assigned by the algorithm if 2 clusters then lables would be 0 or 1
+        lables = kmeans.labels_
+        colors = ["r.", "g.", "b.", "y.", "c."]
+        colors = colors[:K + 1]
+
+        print "Creating plots for %s" % (file_name)
+        for index, component in enumerate(components):
+            Helper.print_progress(index, len(components))
+            plt.plot(component[0], component[1], colors[lables[index]], markersize=5)
+
+        plt.scatter(centers[:, 0], centers[:, 1], marker="x", s=150, linewidths=10, zorder=15)
+        plt.xlabel("1st Principle Component")
+        plt.ylabel("2nd Principle Component")
+        title = "Styles Clusters for %s" % (file_name)
+        plt.title(title)
+        plt.savefig("kmeans-%s.png" % (file_name))
+        plt.clf()
+        os.chdir(current_directory)
 
     def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
         """
@@ -236,8 +276,8 @@ class VectorAnaliser:
 
         # iterating sentences and then words in them
         for index, words in enumerate(sentences):
-            if verbose:
-                Helper.print_progress(index, len(sentences))
+            # if verbose:
+            #     Helper.print_progress(index, len(sentences))
             for word in words:
                 word = word.lower()
                 word_freq = suspicious_freq_dist[word]
@@ -416,8 +456,8 @@ class VectorAnaliser:
         sent_count = len(windows)
 
         print "\nComputing cosine_similarity"
-        for index, window in enumerate(windows):
-            Helper.print_progress(index, len(windows))
+        for window in tqdm(windows):
+            # Helper.print_progress(index, len(windows))
             cs = dot(window, document)/(norm(window)*norm(document))
             cs_sum+=cs
             cosine_array.append(cs)
@@ -518,8 +558,8 @@ class VectorAnaliser:
             dict_file_vectors = manager.dict()
 
             # defining processes
-            p1 = Process(target=self.multi_process_files, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors, True))
-            p2 = Process(target=self.multi_process_files, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors, True))
+            p1 = Process(target=self.multi_process_files, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors))
+            p2 = Process(target=self.multi_process_files, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors))
         
             # starting processes
             p1.start()
@@ -535,14 +575,14 @@ class VectorAnaliser:
             print "recall: ", np.mean(np.array(arr_mean_recall))
             print "f1: ", np.mean(np.array(arr_mean_f1))
 
-            if (not p1.is_alive() and not p2.is_alive()) and dict_file_vectors != {}:
-                print "\n=================K-Means================="
-                for file_item in files:
-                    if file_item in dict_file_vectors:
-                        self.kmeans(dict_file_vectors[file_item], file_item)
+            # if (not p1.is_alive() and not p2.is_alive()) and dict_file_vectors != {}:
+            #     print "\n=================K-Means================="
+            #     for file_item in files:
+            #         if file_item in dict_file_vectors:
+            #             self.kmeans(dict_file_vectors[file_item], file_item)
 
-                # printing execution time
-                print "--- Execution time: %s seconds ---" % (time.time() - start_time)
+            #     # printing execution time
+            #     print "--- Execution time: %s seconds ---" % (time.time() - start_time)
 
         else:
             arr_mean_precision = []
