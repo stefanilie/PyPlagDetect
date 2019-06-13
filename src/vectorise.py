@@ -24,7 +24,7 @@ from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
-from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP, OANC, SUSPICIOUS_DOCUMENTS
+from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP, OANC, SUSPICIOUS_DOCUMENTS, PLOTS
 
 class VectorAnaliser:
     def __init__(self, corpus, stop_words, custom_mode=False):
@@ -63,14 +63,14 @@ class VectorAnaliser:
             print "\nTokenizing and training finished succesfully!"
             sys.exit()  
 
-    def multi_process_files(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
+    def multi_process_files(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors={}, kmeans=False):
         """
         Just a wrapper so that we can multi-process.
         """
         for f in arr_files:
-            self.analize_file(f, k, arr_mean_precision, arr_mean_recall, arr_mean_f1)
+            self.analize_file(f, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors, kmeans)
 
-    def analize_file(self, file_item, k, arr_mean_precision, arr_mean_recall, arr_mean_f1):
+    def analize_file(self, file_item, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors, kmeans=False):
         """
         Analyzes file by creating windows
         and extracting window features.
@@ -184,6 +184,13 @@ class VectorAnaliser:
                 print "\n%s precision: " % (file_item), precision
                 print "%s recall: " % (file_item), recall
                 print "%s f1: " % (file_item), f1
+
+        if kmeans:
+            dict_file_vectors[file_item] = windows_total
+
+    def kmeans(self, vector, file_name, K=2):
+        current_directory = os.getcwd()
+        os.chdir(PLOTS)
 
     def feature_extraction(self, sentences, most_common_word_freq, suspicious_freq_dist, verbose=False):
         """
@@ -508,10 +515,11 @@ class VectorAnaliser:
             arr_mean_precision = manager.list()
             arr_mean_recall = manager.list()
             arr_mean_f1 = manager.list()
+            dict_file_vectors = manager.dict()
 
             # defining processes
-            p1 = Process(target=self.multi_process_files, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
-            p2 = Process(target=self.multi_process_files, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1))
+            p1 = Process(target=self.multi_process_files, args=(first_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors, True))
+            p2 = Process(target=self.multi_process_files, args=(second_half, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors, True))
         
             # starting processes
             p1.start()
@@ -527,15 +535,21 @@ class VectorAnaliser:
             print "recall: ", np.mean(np.array(arr_mean_recall))
             print "f1: ", np.mean(np.array(arr_mean_f1))
 
-            # printing execution time
-            print "--- Execution time: %s seconds ---" % (time.time() - start_time)
+            if (not p1.is_alive() and not p2.is_alive()) and dict_file_vectors != {}:
+                print "\n=================K-Means================="
+                for file_item in files:
+                    if file_item in dict_file_vectors:
+                        self.kmeans(dict_file_vectors[file_item], file_item)
+
+                # printing execution time
+                print "--- Execution time: %s seconds ---" % (time.time() - start_time)
 
         else:
             arr_mean_precision = []
             arr_mean_recall = []
             arr_mean_f1 = []
             
-            self.multi_process_files(files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1)
+            self.multi_process_files(files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, kmeans=True)
 
             # printing results
             print "\n=================TOTAL================="

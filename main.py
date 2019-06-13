@@ -107,11 +107,11 @@ def main():
             corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
             
             vector_analizer = VectorAnaliser(corpusReader, stopWords)
-            vector_analizer.vectorise(corpusReader)
+            vector_analizer.vectorise(corpusReader, multiprocessing=multiprocessing)
         elif decision == 2:
             os.chdir(SUSPICIOUS_DOCUMENTS)
             corpusReader = PlaintextCorpusReader(SUSPICIOUS_DOCUMENTS, '.*\.txt')
-        
+                
             vector_analizer = VectorAnaliser(corpusReader, stopWords)
             vector_analizer.vectorise(corpusReader, multiprocessing=multiprocessing)
     elif decision==3:
