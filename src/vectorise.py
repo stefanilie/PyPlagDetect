@@ -206,8 +206,8 @@ class VectorAnaliser:
         # Breaking into principle components
         pca = PCA(n_components=2)
         components = (pca.fit_transform(x))
+        
         # Applying kmeans algorithm for finding centroids
-
         kmeans = KMeans(n_clusters=K, n_jobs=-1)
         kmeans.fit_transform(components)
         print("labels: ", kmeans.labels_)
@@ -219,8 +219,7 @@ class VectorAnaliser:
         colors = colors[:K + 1]
 
         print "Creating plots for %s" % (file_name)
-        for index, component in enumerate(components):
-            Helper.print_progress(index, len(components))
+        for index, component in enumerate(tqdm(components)):
             plt.plot(component[0], component[1], colors[lables[index]], markersize=5)
 
         plt.scatter(centers[:, 0], centers[:, 1], marker="x", s=150, linewidths=10, zorder=15)
@@ -386,8 +385,7 @@ class VectorAnaliser:
         toTag = []
         files = self.corpus.fileids()
         print "\nExtracting words from files..."
-        for index, file_item in enumerate(files):
-            Helper.print_progress(index, len(files))
+        for index, file_item in enumerate(tqdm(files)):
             paras = self.corpus.paras(file_item)
         
             try:
@@ -519,7 +517,7 @@ class VectorAnaliser:
             print "\nPossible plagiarised passages for %s:" % (file_item)
             self.pretty_printer.pprint(passages)
            
-    def vectorise(self, corpus, coeficient=6, custom_mode=False, multiprocessing=False):
+    def vectorise(self, corpus, coeficient=8, custom_mode=False, multiprocessing=False):
 
         """
         Main method for vectorising the corpus. 
@@ -575,14 +573,14 @@ class VectorAnaliser:
             print "recall: ", np.mean(np.array(arr_mean_recall))
             print "f1: ", np.mean(np.array(arr_mean_f1))
 
-            # if (not p1.is_alive() and not p2.is_alive()) and dict_file_vectors != {}:
-            #     print "\n=================K-Means================="
-            #     for file_item in files:
-            #         if file_item in dict_file_vectors:
-            #             self.kmeans(dict_file_vectors[file_item], file_item)
+            if (not p1.is_alive() and not p2.is_alive()) and dict_file_vectors != {}:
+                print "\n=================K-Means================="
+                for file_item in files:
+                    if file_item in dict_file_vectors:
+                        self.kmeans(dict_file_vectors[file_item], file_item)
 
-            #     # printing execution time
-            #     print "--- Execution time: %s seconds ---" % (time.time() - start_time)
+            # printing execution time
+            print "--- Execution time: %s seconds ---" % (time.time() - start_time)
 
         else:
             arr_mean_precision = []

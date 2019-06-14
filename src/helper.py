@@ -4,6 +4,7 @@ import os
 import sys
 import pickle
 import numpy as np
+from tqdm import tqdm
 from math import e, log
 from itertools import groupby
 from numpy.linalg import norm
@@ -305,10 +306,10 @@ class Helper:
         """
         sum=0
         print "\nComputing stddev"
-        for index, sent in enumerate(sent_array):
+        for index, sent in enumerate(tqdm(sent_array)):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
             # TODO: check to see .sum methid f  rom numpy
-            Helper.print_progress(index, len(sent_array))
+            # Helper.print_progress(index, len(sent_array))
     
             sum += np.square(np.array(cosine_similarity_array[index]) - np.array(mean))
         return np.sqrt(np.true_divide(1, len(sent_array))*sum)
