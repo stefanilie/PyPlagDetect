@@ -517,7 +517,7 @@ class VectorAnaliser:
             print "\nPossible plagiarised passages for %s:" % (file_item)
             self.pretty_printer.pprint(passages)
            
-    def vectorise(self, corpus, coeficient=8, custom_mode=False, multiprocessing=False):
+    def vectorise(self, corpus, coeficient=6, custom_mode=False, multiprocessing=False):
 
         """
         Main method for vectorising the corpus. 

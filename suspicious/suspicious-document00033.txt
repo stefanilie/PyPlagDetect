@@ -1,1 +1,0 @@
-﻿Hello there, Mr. Smith, how are you doing today? The weather is great and Python is awesome. The sky is pink-ish blue. You shouldn't eat cartboard.
