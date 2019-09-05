@@ -18,6 +18,7 @@ from numpy.linalg import norm
 from collections import Counter
 from compiler.ast import flatten
 from nltk.tag import UnigramTagger
+from gensim.corpora import WikiCorpus
 from nltk.probability import FreqDist
 from sacremoses import MosesDetokenizer
 from multiprocessing import Process, Manager
@@ -64,7 +65,7 @@ class VectorAnaliser:
             self.tagger = Helper.read_dump(TAGGER_DUMP)
 
         elif not len(self.tokenized) and should_tokenize_corpuses:
-            # self.tokenize_corpuses(WIKI_DUMP)
+            self.tokenize_corpuses(WIKI_DUMP)
             self.train_unigram_tagger(TAGGER_DUMP)
             print "\nTokenizing and training finished succesfully!"
             sys.exit()  
@@ -363,6 +364,22 @@ class VectorAnaliser:
 
         # normalizing result
         return Helper.normalize_vector([toReturn])
+
+    def tokenize_wikipedia(self, wiki_file_name):
+        """
+        Creates a pickle file for a wikipedia dump.
+        File will contain the FreqDist.
+        """
+        i = 0
+        wiki_fdist = FreqDist()
+        wiki = WikiCorpus(wiki_file_name)
+        for text in wiki.get_texts():
+            text_fdist = FreqDist(text)
+            i = i + 1
+            wiki_fdist += text_fdist
+            if (i % 10000 == 0):
+                print('Processed ' + str(i) + ' articles')
+        Helper.create_dump(WIKI_DUMP)
 
     def tokenize_corpuses(self, file_name):
         """

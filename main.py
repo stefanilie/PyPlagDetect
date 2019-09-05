@@ -52,6 +52,7 @@ def main():
             isReady = True
 
     if decision==1:
+        # TODO: first check if /wiki contains the wiki dump file
         trainingCorpusReader=PlaintextCorpusReader(OANC, '.*\.txt')
         vector_analizer = VectorAnaliser(trainingCorpusReader, stopWords)
         vector_analizer.should_tokenize(should_tokenize_corpuses=True)
