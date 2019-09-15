@@ -1,20 +1,21 @@
-import pdb
 import os
+import pdb
 import xml.etree.ElementTree as ET
 import numpy as np
 
 from os import listdir
 from compiler.ast import flatten
 from os.path import isfile, join
-from src.config import SUSPICIOUS, SUSPICIOUS_DOCUMENTS
+from src.config import SUSPICIOUS, SUSPICIOUS_DOCUMENTS, CUSTOM_FOLDER
 from helper import Helper
 
 
 class ResultsAnalyzer:
 
-  def __init__(self, corpus, file_name):
+  def __init__(self, corpus, file_name, custom_mode=False):
     self.corpus = corpus
     self.file_name = file_name
+    self.custom_mode = custom_mode
 
   def get_files_in_folder(self):
     current_directory = os.getcwd()
@@ -41,7 +42,7 @@ class ResultsAnalyzer:
         root_file_name = self.file_name.split('.')[0]
         root_file_name += '.xml'
         if root_file_name not in fileids:
-          raise Exception("\nFile %s not present in folder" %(root_file_name))
+          return arr_offset_length
         tree = ET.parse(root_file_name)
         root = tree.getroot()
         for child in root:
@@ -71,10 +72,21 @@ class ResultsAnalyzer:
     Returns text from file starting from offset.
     TODO: remove file_name and add it to self.
     '''
-    f = open(self.file_name, 'r')
-    f.seek(int(offset))
-    toReturn = f.read(int(length))
-    return toReturn
+    
+    if self.custom_mode:
+      # saving current directory
+      current_directory=os.getcwd()
+
+      # chaning it to the data dumps one
+      os.chdir(CUSTOM_FOLDER)
+
+      f = open(self.file_name, 'r')
+      f.seek(int(offset))
+      toReturn = f.read(int(length))
+
+      os.chdir(current_directory)
+
+      return toReturn
 
   def chunks_to_passages(self, dict_offset_index, chunks):
     '''
@@ -146,24 +158,3 @@ class ResultsAnalyzer:
           else:
             arr_suspect_overlap[suspect_index] = overlap
     return arr_overlap, arr_suspect_overlap
-        
-        # TODO: remove this when certainly we don't need it.
-        # if suspect_interval[0] > plag_interval[0] and suspect_interval[1] < plag_interval[1]:
-        #     overlap = Helper.get_overlap(suspect_interval, plag_interval)
-        #     if overlap:
-        #       if arr_overlap[plag_index]:
-        #         # Check why is this happening.
-        #         pdb.set_trace()
-        #     arr_overlap[plag_index] = overlap
-        # elif suspect_interval[0] <= plag_interval[0]:   
-        #   if suspect_interval[1] < plag_interval[0]:
-        #     continue
-        #   overlap = Helper.get_overlap(suspect_interval, plag_interval)
-        #   if overlap:
-        #     if arr_overlap[plag_index]:
-        #       # Check why is this happening.
-        #       pdb.set_trace()
-        #     arr_overlap[plag_index] = overlap
-        #   else: 
-        #     continue
-    

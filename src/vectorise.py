@@ -1,5 +1,4 @@
 import os
-import pdb
 import sys
 import time
 import pickle
@@ -26,7 +25,7 @@ from nltk import sent_tokenize, word_tokenize
 from src.results_analyzer import ResultsAnalyzer
 from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import movie_reviews, abc, brown, gutenberg, reuters, inaugural
-from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP, OANC, SUSPICIOUS_DOCUMENTS, PLOTS
+from config import WIKI_DUMP, TAGGER_DUMP, SMALL_DUMP, OANC, SUSPICIOUS_DOCUMENTS, PLOTS, WIKI_FILE_NAME
 
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -61,14 +60,17 @@ class VectorAnaliser:
             print "\nReading wikipedia dump..."
             self.tokenized = Helper.read_dump(WIKI_DUMP)
             print "\nReading UnigramTagger dump..."
-            # TODO: replace with the UnigramTagger when It will work.
             self.tagger = Helper.read_dump(TAGGER_DUMP)
 
         elif not len(self.tokenized) and should_tokenize_corpuses:
-            self.tokenize_corpuses(WIKI_DUMP)
-            self.train_unigram_tagger(TAGGER_DUMP)
-            print "\nTokenizing and training finished succesfully!"
-            sys.exit()  
+            if os.path.isfile(WIKI_FILE_NAME):
+                self.tokenize_corpuses(WIKI_DUMP, WIKI_FILE_NAME)
+                self.train_unigram_tagger(TAGGER_DUMP)
+                print "\nTokenizing and training finished succesfully!"
+                sys.exit()
+            else:
+                print "\nThe wikipedia file dump not present in the root folder."
+                sys.exit()
 
     def multi_process_files(self, arr_files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, dict_file_vectors={}, kmeans=False):
         """
@@ -379,9 +381,9 @@ class VectorAnaliser:
             wiki_fdist += text_fdist
             if (i % 10000 == 0):
                 print('Processed ' + str(i) + ' articles')
-        Helper.create_dump(WIKI_DUMP)
+        Helper.create_dump(wiki_fdist, WIKI_DUMP)
 
-    def tokenize_corpuses(self, file_name):
+    def tokenize_corpuses(self, file_name, wiki_file_name):
         """
         Tokenizes all corpuses and generates a Frequency Distribution.
         @return [nltk.FreqDest] Frequency Distributiion
@@ -392,6 +394,7 @@ class VectorAnaliser:
         self.tokenized += Helper.tokenize_corpus(brown, self.stop_words, True)
         self.tokenized += Helper.tokenize_corpus(reuters, self.stop_words, True)
         self.tokenized += Helper.tokenize_corpus(self.corpus, self.stop_words)
+        self.tokenized += self.tokenize_wikipedia(wiki_file_name)
         Helper.create_dump(self.tokenized, file_name)
 
     def train_unigram_tagger(self, file_name):
@@ -434,13 +437,10 @@ class VectorAnaliser:
         arr_pos=[]
         for sentence in sentences:
             # TODO: change to use this instead of default pos_tag
-            # pdb.set_trace()
             tagged_sents = self.tagger.tag(sentence)
-            # pdb.set_trace()
             # tagged_sents = pos_tag(sentence)
 
             # check if tagged_sents works well
-            # pdb.set_trace()
             tagged_sents = self.create_pos_dict(tagged_sents)
             
             # append to an array all objects
@@ -522,27 +522,25 @@ class VectorAnaliser:
         with the ones provided by the training corpus.
         @return: TODO: number of correct detected chars.
         """
-        result_analizer = ResultsAnalyzer(self.corpus, file_item)
+        result_analizer = ResultsAnalyzer(self.corpus, file_item, self.custom_mode)
         xml_data = result_analizer.get_offset_from_xml()
-        if xml_data:
+        if xml_data != []:
             self.arr_plag_offset = [[int(x['offset']), int(x['offset'])+int(x['length'])] for x in xml_data]
             self.arr_suspect_offset = result_analizer.chunks_to_offset(dict_offset_index, suspect_indexes)
 
             self.arr_overlap, self.arr_suspect_overlap = result_analizer.compare_offsets(self.arr_plag_offset, self.arr_suspect_offset)
-        elif not xml_data and self.custom_mode ==True:
+        elif xml_data == [] and self.custom_mode ==True:
             passages = result_analizer.chunks_to_passages(dict_offset_index, suspect_indexes)
             print "\nPossible plagiarised passages for %s:" % (file_item)
             self.pretty_printer.pprint(passages)
            
-    def vectorise(self, corpus, coeficient=6, custom_mode=False, multiprocessing=False):
+    def vectorise(self, corpus, coeficient=6, multiprocessing=False):
 
         """
         Main method for vectorising the corpus. 
         @param corpus: PlainTextCorpusReade that will 
         handle reading suspect files.
-        @param coeficient: window size 
-        @param custom_mode: trigger for custom files 
-        without performance evaluation of algorithm.
+        @param coeficient: window size
         """
         
         # monitoring execution time for performance reasons
@@ -606,11 +604,12 @@ class VectorAnaliser:
             
             self.multi_process_files(files, k, arr_mean_precision, arr_mean_recall, arr_mean_f1, kmeans=True)
 
+            if self.custom_mode == False:
             # printing results
-            print "\n=================TOTAL================="
-            print "precision: ", np.mean(np.array(arr_mean_precision))
-            print "recall: ", np.mean(np.array(arr_mean_recall))
-            print "f1: ", np.mean(np.array(arr_mean_f1))
+                print "\n=================TOTAL================="
+                print "precision: ", np.mean(np.array(arr_mean_precision))
+                print "recall: ", np.mean(np.array(arr_mean_recall))
+                print "f1: ", np.mean(np.array(arr_mean_f1))
 
             # printing execution time
             print "--- Execution time: %s seconds ---" % (time.time() - start_time)

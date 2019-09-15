@@ -10,7 +10,7 @@ from nltk.tag import UnigramTagger
 from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict, treebank
 from nltk.corpus.reader import PlaintextCorpusReader
-from src.config import SUSPICIOUS, TRAINING, OANC, SUSPICIOUS_DOCUMENTS
+from src.config import SUSPICIOUS, TRAINING, OANC, SUSPICIOUS_DOCUMENTS, CUSTOM_FOLDER
 
 from src.vectorise import VectorAnaliser
 # load the resources
@@ -72,20 +72,6 @@ def main():
                 print "Option '{0}' doesn't exist.".format(decision)
             else:
                 isReady = True
-
-        # if decision == 1:
-        #         # setting the PATH
-        #     os.chdir(SUSPICIOUS)
-
-        #     # initialising the corpus reader to the docs path
-        #     corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
-        # elif decision == 2: 
-            #     # setting the PATH
-            # os.chdir(SUSPICIOUS_DOCUMENTS)
-
-            # # initialising the corpus reader to the docs path
-            # corpusReader = PlaintextCorpusReader(SUSPICIOUS_DOCUMENTS, '.*\.txt')
-
         isReady = False
         multi = ''
         print "\nPlease choose a mode:"
@@ -116,6 +102,7 @@ def main():
             vector_analizer = VectorAnaliser(corpusReader, stopWords)
             vector_analizer.vectorise(corpusReader, multiprocessing=multiprocessing)
     elif decision==3:
+        corpusReader = PlaintextCorpusReader(CUSTOM_FOLDER, '.*\.txt')
         vector_analizer = VectorAnaliser(corpusReader, stopWords, custom_mode=True)
         vector_analizer.vectorise(corpusReader)
     else:
