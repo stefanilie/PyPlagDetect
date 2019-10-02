@@ -1,3 +1,4 @@
+import pdb
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 
@@ -8,5 +9,16 @@ example_text = "Hello there, Mr. Smith, how are you doing today? The weather is 
 #
 # print(word_tokenize(example_text))
 
-for i in word_tokenize(example_text):
-    print(i)
+# for i in word_tokenize(example_text):
+#     print(i)
+
+# Pre-compute number of chunks to emit
+array = word_tokenize(example_text)
+windows=[]
+numOfChunks = ((len(array)-4)/1)+1
+
+# Do the work
+for i in range(0,numOfChunks*1,1):
+    windows.append(array[i:i+4])
+
+pdb.set_trace()

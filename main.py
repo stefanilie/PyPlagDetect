@@ -1,109 +1,111 @@
 import os
 import re
+import sys
 import math
 import nltk
-import config
 import string
-import pprint
 
-from nltk.corpus.reader import PlaintextCorpusReader
 from nltk.corpus import stopwords
+from nltk.tag import UnigramTagger
 from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict, treebank
-from nltk.tag import UnigramTagger
+from nltk.corpus.reader import PlaintextCorpusReader
+from src.config import SUSPICIOUS, TRAINING, OANC, SUSPICIOUS_DOCUMENTS, CUSTOM_FOLDER
 
-from paragraph import ParagraphAnalyser
-from sentence import SentenceAnalyser
-from vectorise import VectorAnaliser
+from src.vectorise import VectorAnaliser
 # load the resources
 
-
-'''
-Downloads all of the nltk resources.
-'''
 def downloadNLTKResources():
+    """
+    Downloads all of the nltk resources.
+    """
     nltk.download('all')
 
+def exitWithMessage(message): 
+    print message
+    sys.exit()
 
 def main():
-
     # downloadNLTKResources()
-
-    # setting the PATH
-    os.chdir(config.PATH)
-
-    # initialising the corpus reader to the docs path
-    corpusReader = PlaintextCorpusReader(config.PATH, '.*\.txt')
-
 
     # setting stopwords
     stopWords = set(stopwords.words('english'))
 
-    # cmdict = cmudict.dict()
+    isReady = False
+    decision = ''
 
-    # pretty_printer = pprint.PrettyPrinter(indent=4)
-
-    # Training a unigram part of speech tagger
-    train_sents = treebank.tagged_sents()[:5000]
-    tagger = UnigramTagger(train_sents)
-
-    vectorise = VectorAnaliser(corpusReader, tagger, stopWords)
-    vectorise.vectorise(corpus=corpusReader, coeficient=4)
-
-
-    para_analyser = ParagraphAnalyser(corpusReader, tagger, stopWords)
-    feature_arr = para_analyser.compute_paragraph_features(corpus=corpusReader)
-    feature_arr = para_analyser.classify_chunks_paragraph(feature_dict=feature_arr,
-                                                    corpus=corpusReader)
-    print "\n\===============Data after feature classification===============\n"
-    pretty_printer.pprint(feature_arr)
-
-    sentence_analiyser = SentenceAnalyser(corpusReader, tagger, stopWords)
-    sent_feat_arr = sentence_analiyser.compute_sentence_features(corpusReader)
-    sent_feat_arr = sentence_analiyser.classify_chunks_sentence(sent_feat_arr, corpusReader)
-
-    sent_ratios = []
-    para_ratios = []
-
-    for index, item in enumerate(feature_arr):
-        if "plagiarized_doc" in item:
-            sent_ratios.append({
-                "document_no": index,
-                "ratio": item["plagiarised_ratio"]
-            })
+    # basic menu
+    print "Welcome to PyPlagDetect!"
+    print "Please choose an action:"
+    while(not isReady):
+        print "1. Tokenize and export dump via Pickle"
+        print "2. Import dumps using Pickle and Analyze PAN corpus"
+        print "3. Analyse files (without precision output)"
+        try:
+            decision = raw_input("Choose action: ")
+            decision = int(decision)
+        except ValueError:
+            print "Option '{0}' doesn't exist.".format(decision)
+        if decision not in [1, 2, 3]:
+            print "Option '{0}' doesn't exist.".format(decision)
         else:
-            sent_ratios.append({
-                "document_no": index,
-                "ratio": 0
+            isReady = True
 
-            })
-    for index, item in enumerate(sent_feat_arr):
-        if "plagiarized_doc" in item:
-            para_ratios.append({
-                "document_no": index,
-                "ratio": item["plagiarised_ratio"]
-            })
-        else:
-            para_ratios.append({
-                "document_no": index,
-                "ratio": 0
-            })
-    for index, item in enumerate(para_ratios):
-        ratio = str(float(item["ratio"])+float(sent_ratios[index]["ratio"])/2.0)
-        if ratio > 0:
-            if item["ratio"]>0:
-                if sent_ratios[index]["ratio"]>0:
-                    print "Document "+str(index) + " is plagiarised with an average ratio of: " + ratio
-                else:
-                    print "Document "+str(index) + " is plagiarised with an average ratio of (sentence_ratio: 0): " + ratio
+    if decision==1:
+        # TODO: first check if /wiki contains the wiki dump file
+        trainingCorpusReader=PlaintextCorpusReader(OANC, '.*\.txt')
+        vector_analizer = VectorAnaliser(trainingCorpusReader, stopWords)
+        vector_analizer.should_tokenize(should_tokenize_corpuses=True)
+    elif decision==2:
+        isReady = False
+        decision = ''
+        print "\nPlease choose folder to analize:"
+        while(not isReady):
+            print "1. /suspicious: (21 files, 2 without real plag data)"
+            print "2. /suspicious-documents: PAN 2009 corpus"
+            try:
+                decision = raw_input("Choose mode: ")
+                decision = int(decision)
+            except ValueError:
+                print "Option '{0}' doesn't exist.".format(decision)
+            if decision not in [1, 2, 3]:
+                print "Option '{0}' doesn't exist.".format(decision)
             else:
-                if sent_ratios[index]["ratio"]>0:
-                    print "Document "+str(index) + " is plagiarised with an average ratio of (para_ratio: 0): " + ratio
-        else:
-            print "Document is not plagiarised."
+                isReady = True
+        isReady = False
+        multi = ''
+        print "\nPlease choose a mode:"
+        while(not isReady):
+            print "1. Single thread"
+            print "2. Multi-threading"
+            try:
+                multi = raw_input("Choose mode: ")
+                multi = int(multi)
+            except ValueError:
+                print "Option '{0}' doesn't exist.".format(multi)
+            if multi not in [1, 2, 3]:
+                print "Option '{0}' doesn't exist.".format(multi)
+            else:
+                isReady = True
 
-
-
-
+        multiprocessing = True if multi == 2 else False
+        if decision == 1:
+            os.chdir(SUSPICIOUS)
+            corpusReader = PlaintextCorpusReader(SUSPICIOUS, '.*\.txt')
+            
+            vector_analizer = VectorAnaliser(corpusReader, stopWords)
+            vector_analizer.vectorise(corpusReader, multiprocessing=multiprocessing)
+        elif decision == 2:
+            os.chdir(SUSPICIOUS_DOCUMENTS)
+            corpusReader = PlaintextCorpusReader(SUSPICIOUS_DOCUMENTS, '.*\.txt')
+                
+            vector_analizer = VectorAnaliser(corpusReader, stopWords)
+            vector_analizer.vectorise(corpusReader, multiprocessing=multiprocessing)
+    elif decision==3:
+        corpusReader = PlaintextCorpusReader(CUSTOM_FOLDER, '.*\.txt')
+        vector_analizer = VectorAnaliser(corpusReader, stopWords, custom_mode=True)
+        vector_analizer.vectorise(corpusReader)
+    else:
+        print "Option '{0}' doesn't exist.".format(decision)
 
 if __name__ == "__main__": main()
