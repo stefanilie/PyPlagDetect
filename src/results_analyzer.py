@@ -1,22 +1,24 @@
-import pdb
 import os
-import xml.etree.ElementTree as ET
+import pdb
 import numpy as np
+import xml.etree.ElementTree as ET
 
 from os import listdir
-from os.path import isfile, join
-from src.config import SUSPICIOUS
 from src.helper import Helper
+from os.path import isfile, join
+from src.config import SUSPICIOUS, SUSPICIOUS_DOCUMENTS, CUSTOM_FOLDER
 
 
 class ResultsAnalyzer:
 
-  def __init__(self, corpus, file_name):
+  def __init__(self, corpus, file_name, custom_mode=False):
     self.corpus = corpus
     self.file_name = file_name
+    self.custom_mode = custom_mode
 
   def get_files_in_folder(self):
-    fileids = [f for f in listdir(SUSPICIOUS) if isfile(join(SUSPICIOUS, f))]
+    current_directory = os.getcwd()
+    fileids = [f for f in listdir(current_directory) if isfile(join(current_directory, f))]
     return fileids
 
   def get_offset_from_xml(self):
@@ -29,16 +31,17 @@ class ResultsAnalyzer:
     arr_offset_length = []
     fileids = self.get_files_in_folder()
     if self.file_name not in fileids:
-      raise Exception("File %s not present in folder" %(self.file_name))
+      raise Exception("\nFile %s not present in folder" %(self.file_name))
     else:
       try:
         current_directory=os.getcwd()
-        os.chdir(SUSPICIOUS)
+
+        os.chdir(current_directory)
         
         root_file_name = self.file_name.split('.')[0]
         root_file_name += '.xml'
         if root_file_name not in fileids:
-          raise Exception("File %s not present in folder" %(root_file_name))
+          return arr_offset_length
         tree = ET.parse(root_file_name)
         root = tree.getroot()
         for child in root:
@@ -48,8 +51,7 @@ class ResultsAnalyzer:
           })
         return arr_offset_length
       except:
-        print("File %s not present in folder" %(root_file_name))
-
+        print("\nFile %s not present in folder" %(root_file_name))
 
   def get_plagiarised(self, xml_data):
     '''
@@ -57,7 +59,7 @@ class ResultsAnalyzer:
     based on the provided offset and length.
     '''
     if self.file_name not in self.corpus.fileids():
-      raise Exception("File %s not present in corpus" %(self.file_name))
+      raise Exception("\nFile %s not present in corpus" %(self.file_name))
     else:
       arr_plagiarised = []
       for xml_line in xml_data:
@@ -69,17 +71,28 @@ class ResultsAnalyzer:
     Returns text from file starting from offset.
     TODO: remove file_name and add it to self.
     '''
-    f = open(self.file_name, 'r')
-    f.seek(int(offset))
-    toReturn = f.read(int(length))
-    return toReturn
+    
+    if self.custom_mode:
+      # saving current directory
+      current_directory=os.getcwd()
+
+      # chaning it to the data dumps one
+      os.chdir(CUSTOM_FOLDER)
+
+      f = open(self.file_name, 'r')
+      f.seek(int(offset))
+      toReturn = f.read(int(length))
+
+      os.chdir(current_directory)
+
+      return toReturn
 
   def chunks_to_passages(self, dict_offset_index, chunks):
     '''
     Returns detected sentences using the offset of each sentence.
     @param: dict_offset_index - contains where each sentence starts and its length
     @param: chunks - index of possbile plagiarized sentences.
-    @return arr_passages - string with actual characters plagiarized from source file.
+    @return arr_passages - arr of strings with actual characters plagiarized from source file.
     '''
     arr_passages = []
     for chunk in chunks:
@@ -93,7 +106,7 @@ class ResultsAnalyzer:
         for item in chunk:
           length += dict_offset_index[item][-1]
         arr_passages.append(self.read_by_offset(offset, length))
-    return Helper.flatten(arr_passages)
+    return arr_passages
 
   def chunks_to_offset(self, dict_offset_index, chunks):
     '''
@@ -144,24 +157,3 @@ class ResultsAnalyzer:
           else:
             arr_suspect_overlap[suspect_index] = overlap
     return arr_overlap, arr_suspect_overlap
-        
-        # TODO: remove this when certainly we don't need it.
-        # if suspect_interval[0] > plag_interval[0] and suspect_interval[1] < plag_interval[1]:
-        #     overlap = Helper.get_overlap(suspect_interval, plag_interval)
-        #     if overlap:
-        #       if arr_overlap[plag_index]:
-        #         # Check why is this happening.
-        #         pdb.set_trace()
-        #     arr_overlap[plag_index] = overlap
-        # elif suspect_interval[0] <= plag_interval[0]:   
-        #   if suspect_interval[1] < plag_interval[0]:
-        #     continue
-        #   overlap = Helper.get_overlap(suspect_interval, plag_interval)
-        #   if overlap:
-        #     if arr_overlap[plag_index]:
-        #       # Check why is this happening.
-        #       pdb.set_trace()
-        #     arr_overlap[plag_index] = overlap
-        #   else: 
-        #     continue
-    
