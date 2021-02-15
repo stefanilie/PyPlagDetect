@@ -9,7 +9,6 @@ from itertools import groupby
 from numpy.linalg import norm
 from nltk import word_tokenize
 from operator import itemgetter
-from compiler.ast import flatten
 from nltk.probability import FreqDist
 from src.config import SUSPICIOUS, DUMPS, SUSPICIOUS_DOCUMENTS
 from sklearn.preprocessing import normalize
@@ -204,18 +203,18 @@ class Helper:
         @param with_stop_words - [Boolean] if stop words should be excluded or not.
         @return [list of strings] - tokenized array for all the corpus docs.
         """
-        print "==========="
-        print "Tokenizeing ", corpus
+        print("===========")
+        print("Tokenizeing ", corpus)
         tokenized = []
         if not cathegorized: 
             for id in corpus.fileids():
-                print "1-------file------"
-                print id
+                print("1-------file------")
+                print(id)
                 raw = corpus.raw(id)
                 tokenized += word_tokenize(raw)        
         else:
-            print "2-------cathegory------"
-            print type(corpus)
+            print("2-------cathegory------")
+            print(type(corpus))
             if type(corpus) is LazyCorpusLoader:
                 tokenized += corpus.words()
             else:
@@ -285,7 +284,7 @@ class Helper:
         Returns grouped consecutive items.
         """
         toReturn = []
-        for k, g in groupby(enumerate(arr), lambda (i, x): i-x):
+        for k, g in groupby(enumerate(arr), lambda i, x: i-x):
             toReturn.append(map(itemgetter(1), g))
         return toReturn
 
@@ -304,7 +303,7 @@ class Helper:
         @return [float] standard deviation of the for the annalized widow.
         """
         sum=0
-        print "\nComputing stddev"
+        print("\nComputing stddev")
         for index, sent in enumerate(tqdm(sent_array)):
             # TODO: mean and the result of cosine simularity MUST be np.array type (matrices)
             # TODO: check to see .sum methid f  rom numpy

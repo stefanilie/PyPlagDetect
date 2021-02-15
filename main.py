@@ -22,7 +22,7 @@ def downloadNLTKResources():
     nltk.download('all')
 
 def exitWithMessage(message): 
-    print message
+    print(message)
     sys.exit()
 
 def main():
@@ -35,19 +35,19 @@ def main():
     decision = ''
 
     # basic menu
-    print "Welcome to PyPlagDetect!"
-    print "Please choose an action:"
+    print("Welcome to PyPlagDetect!")
+    print("Please choose an action:")
     while(not isReady):
-        print "1. Tokenize and export dump via Pickle"
-        print "2. Import dumps using Pickle and Analyze PAN corpus"
-        print "3. Analyse files (without precision output)"
+        print("1. Tokenize and export dump via Pickle")
+        print("2. Import dumps using Pickle and Analyze PAN corpus")
+        print("3. Analyse files (without precision output)")
         try:
-            decision = raw_input("Choose action: ")
+            decision = input("Choose action: ")
             decision = int(decision)
         except ValueError:
-            print "Option '{0}' doesn't exist.".format(decision)
+            print("Option '{0}' doesn't exist.".format(decision))
         if decision not in [1, 2, 3]:
-            print "Option '{0}' doesn't exist.".format(decision)
+            print("Option '{0}' doesn't exist.".format(decision))
         else:
             isReady = True
 
@@ -59,32 +59,32 @@ def main():
     elif decision==2:
         isReady = False
         decision = ''
-        print "\nPlease choose folder to analize:"
+        print("\nPlease choose folder to analize:")
         while(not isReady):
-            print "1. /suspicious: (21 files, 2 without real plag data)"
-            print "2. /suspicious-documents: PAN 2009 corpus"
+            print("1. /suspicious: (21 files, 2 without real plag data)")
+            print("2. /suspicious-documents: PAN 2009 corpus")
             try:
-                decision = raw_input("Choose mode: ")
+                decision = input("Choose mode: ")
                 decision = int(decision)
             except ValueError:
-                print "Option '{0}' doesn't exist.".format(decision)
+                print("Option '{0}' doesn't exist.".format(decision))
             if decision not in [1, 2, 3]:
-                print "Option '{0}' doesn't exist.".format(decision)
+                print("Option '{0}' doesn't exist.".format(decision))
             else:
                 isReady = True
         isReady = False
         multi = ''
-        print "\nPlease choose a mode:"
+        print("\nPlease choose a mode:")
         while(not isReady):
-            print "1. Single thread"
-            print "2. Multi-threading"
+            print("1. Single thread")
+            print("2. Multi-threading")
             try:
-                multi = raw_input("Choose mode: ")
+                multi = input("Choose mode: ")
                 multi = int(multi)
             except ValueError:
-                print "Option '{0}' doesn't exist.".format(multi)
+                print("Option '{0}' doesn't exist.".format(multi))
             if multi not in [1, 2, 3]:
-                print "Option '{0}' doesn't exist.".format(multi)
+                print("Option '{0}' doesn't exist.".format(multi))
             else:
                 isReady = True
 
@@ -106,6 +106,6 @@ def main():
         vector_analizer = VectorAnaliser(corpusReader, stopWords, custom_mode=True)
         vector_analizer.vectorise(corpusReader)
     else:
-        print "Option '{0}' doesn't exist.".format(decision)
+        print("Option '{0}' doesn't exist.".format(decision))
 
 if __name__ == "__main__": main()

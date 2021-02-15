@@ -1,13 +1,12 @@
 import os
 import pdb
-import xml.etree.ElementTree as ET
 import numpy as np
+import xml.etree.ElementTree as ET
 
 from os import listdir
-from compiler.ast import flatten
+from src.helper import Helper
 from os.path import isfile, join
 from src.config import SUSPICIOUS, SUSPICIOUS_DOCUMENTS, CUSTOM_FOLDER
-from helper import Helper
 
 
 class ResultsAnalyzer:
@@ -52,7 +51,7 @@ class ResultsAnalyzer:
           })
         return arr_offset_length
       except:
-        print "\nFile %s not present in folder" %(root_file_name)
+        print("\nFile %s not present in folder" %(root_file_name))
 
   def get_plagiarised(self, xml_data):
     '''
