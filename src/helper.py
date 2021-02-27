@@ -283,10 +283,18 @@ class Helper:
         Finds all consecutive items in array.
         Returns grouped consecutive items.
         """
-        toReturn = []
-        for k, g in groupby(enumerate(arr), lambda i, x: i-x):
-            toReturn.append(map(itemgetter(1), g))
-        return toReturn
+        run = []
+        result = [run]
+        expect = None
+        for v in arr:
+            if (v == expect) or (expect is None):
+                run.append(v)
+            else:
+                run = [v]
+                result.append(run)
+            expect = v + 1
+        return result
+
 
 
     @staticmethod

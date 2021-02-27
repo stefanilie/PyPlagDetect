@@ -557,8 +557,8 @@ class VectorAnaliser:
             manager = Manager()
 
             # spliting the files into two
-            first_half = files[:len(files)/2]
-            second_half = files[len(files)/2:]
+            first_half = files[:len(files)//2]
+            second_half = files[len(files)//2:]
             
             # creating shared lists
             # multi-processing doesn't support global variables. 
